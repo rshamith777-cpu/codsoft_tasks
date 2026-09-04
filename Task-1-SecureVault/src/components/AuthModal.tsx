@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Lock, Shield, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Lock, Shield, KeyRound } from 'lucide-react';
 import { api } from '../services/api';
 import { User } from '../types';
+import { Button } from './ui/Button';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -21,7 +22,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [rememberSession, setRememberSession] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,20 +34,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       if (mode === 'register') {
-        if (!name.trim()) {
-          throw new Error('Full Name is required.');
-        }
-        if (password.length < 8) {
-          throw new Error('Password must be at least 8 characters.');
-        }
-        if (password !== confirmPassword) {
-          throw new Error('Passwords do not match.');
-        }
-        const data = await api.register(name, email, password);
+        if (!name.trim()) throw new Error('Full Name is required.');
+        if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+        if (password !== confirmPassword) throw new Error('Passwords do not match.');
+        const data = await api.register(name.trim(), email.trim(), password);
         onSuccess(data.user);
         onClose();
       } else {
-        const data = await api.login(email, password);
+        const data = await api.login(email.trim(), password);
         onSuccess(data.user);
         onClose();
       }
@@ -58,230 +52,165 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleDemoCredentials = () => {
-    setName('Security Officer');
-    setEmail('officer@securevault.internal');
-    setPassword('CyberSecurity2026!');
-    setConfirmPassword('CyberSecurity2026!');
-  };
-
   return (
-    <div
-      id="auth-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-modal-title"
-    >
+    <div className="fixed inset-0 z-50 overflow-hidden flex justify-end animate-fadeIn">
+      {/* Dimmed backdrop - subtle on left to preserve cinematic video visibility */}
       <div
-        id="auth-modal-dialog"
-        className="w-full max-w-md bg-[#0a0a0c] border border-white/20 p-6 sm:p-8 shadow-2xl relative"
-        style={{ borderRadius: '8px' }}
-      >
-        {/* Close Button */}
-        <button
-          id="btn-close-auth-modal"
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 border border-white/10 bg-white/5 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-colors"
-          aria-label="Close modal"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-        {/* Modal Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-1">
-            <Lock className="w-4 h-4 text-white/70" />
-            <span className="font-mono-tech text-[10px] text-white/40 tracking-widest uppercase">
-              AUTHENTICATION GATEWAY
-            </span>
-          </div>
-          <h2 id="auth-modal-title" className="text-xl font-medium tracking-tight text-white">
-            {mode === 'login' ? 'Sign In to SecureVault' : 'Create Secure Account'}
-          </h2>
-        </div>
-
-        {/* Mode Switcher Tabs */}
-        <div className="grid grid-cols-2 gap-1 border border-white/10 p-1 bg-white/5 mb-6">
-          <button
-            id="tab-login"
-            type="button"
-            onClick={() => {
-              setMode('login');
-              setError(null);
-            }}
-            className={`py-2 font-mono-tech text-xs tracking-widest uppercase transition-colors ${
-              mode === 'login'
-                ? 'bg-white text-black font-semibold'
-                : 'text-white/60 hover:text-white'
-            }`}
-          >
-            SIGN IN
-          </button>
-          <button
-            id="tab-register"
-            type="button"
-            onClick={() => {
-              setMode('register');
-              setError(null);
-            }}
-            className={`py-2 font-mono-tech text-xs tracking-widest uppercase transition-colors ${
-              mode === 'register'
-                ? 'bg-white text-black font-semibold'
-                : 'text-white/60 hover:text-white'
-            }`}
-          >
-            REGISTER
-          </button>
-        </div>
-
-        {/* Error Notification */}
-        {error && (
-          <div
-            id="auth-error-alert"
-            className="mb-4 p-3 border border-red-500/40 bg-red-500/10 text-red-300 font-mono-tech text-xs flex items-start gap-2"
-          >
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === 'register' && (
-            <div>
-              <label
-                htmlFor="auth-name"
-                className="block font-mono-tech text-[11px] text-white/70 tracking-wider uppercase mb-1.5"
-              >
-                Full Name
-              </label>
-              <input
-                id="auth-name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Alex Vance"
-                className="w-full px-3.5 py-2.5 bg-black border border-white/20 text-white font-mono-tech text-xs focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
-              />
+      {/* Asymmetric Right-Side Translucent Authentication Surface */}
+      <div className="relative w-full max-w-[460px] h-full bg-[#05070c]/90 backdrop-blur-xl border-l border-white/15 shadow-2xl flex flex-col justify-between p-8 sm:p-10 z-10 animate-slideInRight text-white overflow-y-auto">
+        <div>
+          {/* Top Header & Close */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-5 mb-8">
+            <div className="flex items-center gap-2 font-mono-tech text-[10px] tracking-[0.18em] text-white/50 uppercase">
+              <Shield className="w-3.5 h-3.5 text-white/70" />
+              <span>SECURE ACCESS ENCLAVE</span>
             </div>
-          )}
 
-          <div>
-            <label
-              htmlFor="auth-email"
-              className="block font-mono-tech text-[11px] text-white/70 tracking-wider uppercase mb-1.5"
+            <button
+              onClick={onClose}
+              className="p-1 text-white/50 hover:text-white border border-white/10 hover:border-white/30 rounded-[2px] transition-colors focus:outline-none"
+              aria-label="Close authentication window"
             >
-              Email Address
-            </label>
-            <input
-              id="auth-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
-              className="w-full px-3.5 py-2.5 bg-black border border-white/20 text-white font-mono-tech text-xs focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
-            />
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          <div>
-            <label
-              htmlFor="auth-password"
-              className="block font-mono-tech text-[11px] text-white/70 tracking-wider uppercase mb-1.5"
+          {/* Mode Switcher */}
+          <div className="flex border-b border-white/15 mb-6 font-mono-tech text-xs tracking-wider uppercase">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError(null);
+              }}
+              className={`pb-2.5 flex-1 text-center transition-colors relative ${
+                mode === 'login' ? 'text-white font-bold' : 'text-white/40 hover:text-white'
+              }`}
             >
-              Password
-            </label>
-            <input
-              id="auth-password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
-              className="w-full px-3.5 py-2.5 bg-black border border-white/20 text-white font-mono-tech text-xs focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
-            />
+              AUTHENTICATE
+              {mode === 'login' && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMode('register');
+                setError(null);
+              }}
+              className={`pb-2.5 flex-1 text-center transition-colors relative ${
+                mode === 'register' ? 'text-white font-bold' : 'text-white/40 hover:text-white'
+              }`}
+            >
+              INITIALIZE VAULT
+              {mode === 'register' && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-white" />}
+            </button>
           </div>
 
-          {mode === 'register' && (
-            <div>
-              <label
-                htmlFor="auth-confirm-password"
-                className="block font-mono-tech text-[11px] text-white/70 tracking-wider uppercase mb-1.5"
-              >
-                Confirm Password
-              </label>
-              <input
-                id="auth-confirm-password"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full px-3.5 py-2.5 bg-black border border-white/20 text-white font-mono-tech text-xs focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-colors"
-              />
-            </div>
-          )}
+          {/* Title and Editorial Prompt */}
+          <div className="mb-6">
+            <h2 className="font-sans-main text-2xl font-normal text-white tracking-tight leading-snug">
+              {mode === 'login' ? 'Access your encrypted vault.' : 'Establish cryptographic identity.'}
+            </h2>
+            <p className="font-sans-main text-xs text-white/50 mt-1">
+              Zero plaintext exposure. Passwords derived using scrypt with unique salt.
+            </p>
+          </div>
 
-          {mode === 'login' && (
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 cursor-pointer font-mono-tech text-[11px] text-white/60">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'register' && (
+              <div className="space-y-1">
+                <label className="block font-mono-tech text-[10px] tracking-[0.16em] text-white/50 uppercase">
+                  FULL NAME
+                </label>
                 <input
-                  id="auth-remember"
-                  type="checkbox"
-                  checked={rememberSession}
-                  onChange={(e) => setRememberSession(e.target.checked)}
-                  className="rounded-none accent-white"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Security Officer"
+                  required
+                  className="w-full bg-transparent border-none border-b border-white/25 focus:border-b-white/90 rounded-none py-2 px-0 font-sans-main text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors"
                 />
-                <span>Remember session</span>
-              </label>
-              <span className="font-mono-tech text-[10px] text-white/40">
-                [ AUTO-TIMEOUT: 60M ]
-              </span>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button
-            id="btn-auth-submit"
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-white text-black hover:bg-white/90 font-mono-tech font-bold text-xs tracking-widest uppercase transition-colors disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <span>AUTHENTICATING CIPHER...</span>
-            ) : mode === 'login' ? (
-              <span>SIGN IN</span>
-            ) : (
-              <span>CREATE SECURE ACCOUNT</span>
+              </div>
             )}
-          </button>
-        </form>
 
-        {/* Quick Demo Pre-fill */}
-        <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-          <span className="font-mono-tech text-[10px] text-white/40">
-            QUICK EVALUATION:
-          </span>
-          <button
-            id="btn-quick-fill-demo"
-            type="button"
-            onClick={handleDemoCredentials}
-            className="font-mono-tech text-[10px] text-white/80 hover:text-white underline decoration-white/30"
-          >
-            Fill Demo Security Officer Credentials
-          </button>
+            <div className="space-y-1">
+              <label className="block font-mono-tech text-[10px] tracking-[0.16em] text-white/50 uppercase">
+                EMAIL ADDRESS
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="officer@securevault.internal"
+                required
+                className="w-full bg-transparent border-none border-b border-white/25 focus:border-b-white/90 rounded-none py-2 px-0 font-sans-main text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block font-mono-tech text-[10px] tracking-[0.16em] text-white/50 uppercase">
+                MASTER PASSWORD
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                required
+                className="w-full bg-transparent border-none border-b border-white/25 focus:border-b-white/90 rounded-none py-2 px-0 font-sans-main text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors"
+              />
+            </div>
+
+            {mode === 'register' && (
+              <div className="space-y-1">
+                <label className="block font-mono-tech text-[10px] tracking-[0.16em] text-white/50 uppercase">
+                  CONFIRM MASTER PASSWORD
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                  className="w-full bg-transparent border-none border-b border-white/25 focus:border-b-white/90 rounded-none py-2 px-0 font-sans-main text-sm text-white placeholder:text-white/25 focus:outline-none transition-colors"
+                />
+              </div>
+            )}
+
+            {error && (
+              <div className="font-mono-tech text-[11px] text-red-400 tracking-wider pt-1">
+                [{error}]
+              </div>
+            )}
+
+            <div className="pt-4">
+              <Button
+                variant="primary"
+                size="md"
+                type="submit"
+                className="w-full py-3"
+                isLoading={loading}
+              >
+                {loading
+                  ? 'VERIFYING CREDENTIALS...'
+                  : mode === 'login'
+                  ? 'ENTER VAULT'
+                  : 'INITIALIZE ACCOUNT'}
+              </Button>
+            </div>
+          </form>
         </div>
 
-        {/* Security Notice Footer */}
-        <div className="mt-4 p-2.5 border border-white/10 bg-white/5 text-[10px] font-mono-tech text-white/50 leading-normal">
-          <div className="flex items-center gap-1.5 text-white/70 mb-1 font-semibold">
-            <Shield className="w-3 h-3 text-white/70" />
-            SECURITY NOTICE
-          </div>
-          Passwords are cryptographically salted and hashed using scrypt with unique 128-bit salts. No plaintext is ever stored.
+        {/* Technical Footer */}
+        <div className="pt-6 border-t border-white/10 font-mono-tech text-[9.5px] text-white/40 uppercase tracking-wider flex items-center justify-between">
+          <span>AES-256-GCM / SHA-256</span>
+          <span>IMMUTABLE RBAC</span>
         </div>
       </div>
     </div>

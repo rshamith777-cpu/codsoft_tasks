@@ -12,27 +12,44 @@ import {
   KeyRound,
   Trash2,
   RefreshCw,
+  Clock,
+  History,
+  Terminal,
 } from 'lucide-react';
 import { AuditEvent, AuditEventType, SeverityLevel } from '../types';
+import { Button } from './ui/Button';
+import { SeverityBadge } from './ui/Badges';
+import { SearchInput, Select } from './ui/Input';
+import { Drawer } from './ui/Drawer';
 
 interface AuditActivityViewProps {
   auditLogs: AuditEvent[];
   onRefresh: () => void;
 }
 
-export const AuditActivityView: React.FC<AuditActivityViewProps> = ({ auditLogs, onRefresh }) => {
+export const AuditActivityView: React.FC<AuditActivityViewProps> = ({ auditLogs = [], onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
 
-  const filteredLogs = auditLogs.filter((log) => {
+  const safeLogs = auditLogs ?? [];
+
+  const filteredLogs = safeLogs.filter((log) => {
+    if (!log) return false;
+    const search = (searchTerm || '').toLowerCase();
+    const userEmail = (log.userEmail || '').toLowerCase();
+    const resourceName = (log.resourceName || '').toLowerCase();
+    const eventType = (log.eventType || '').toLowerCase();
+    const id = (log.id || '').toLowerCase();
+    const details = (log.details || '').toLowerCase();
+
     const matchesSearch =
-      log.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.resourceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.eventType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase());
+      userEmail.includes(search) ||
+      resourceName.includes(search) ||
+      eventType.includes(search) ||
+      id.includes(search) ||
+      details.includes(search);
 
     const matchesType = filterType === 'ALL' || log.eventType === filterType;
     const matchesSeverity = severityFilter === 'ALL' || log.severity === severityFilter;
@@ -43,7 +60,7 @@ export const AuditActivityView: React.FC<AuditActivityViewProps> = ({ auditLogs,
   const getStatusBadge = (status: string, severity: SeverityLevel) => {
     if (status === 'DENIED' || status === 'FAILED' || severity === 'CRITICAL') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-red-500/40 bg-red-500/10 text-red-400 font-mono-tech text-[10px] uppercase">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-red-500/40 bg-red-500/10 text-red-300 font-mono-tech text-[9.5px] uppercase rounded-[2px]">
           <XCircle className="w-2.5 h-2.5 text-red-400" />
           {status}
         </span>
@@ -51,223 +68,211 @@ export const AuditActivityView: React.FC<AuditActivityViewProps> = ({ auditLogs,
     }
     if (status === 'WARNING' || severity === 'WARNING') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-amber-500/40 bg-amber-500/10 text-amber-300 font-mono-tech text-[10px] uppercase">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-amber-500/40 bg-amber-500/10 text-amber-300 font-mono-tech text-[9.5px] uppercase rounded-[2px]">
           <AlertTriangle className="w-2.5 h-2.5 text-amber-400" />
           {status}
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono-tech text-[10px] uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-mono-tech text-[9.5px] uppercase rounded-[2px]">
         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
         {status}
       </span>
     );
   };
 
-  const getSeverityPill = (severity: SeverityLevel) => {
-    if (severity === 'CRITICAL') {
-      return <span className="text-red-400 font-bold">[CRITICAL]</span>;
-    }
-    if (severity === 'WARNING') {
-      return <span className="text-amber-400">[WARNING]</span>;
-    }
-    return <span className="text-white/40">[INFO]</span>;
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-2 text-white/50 font-mono-tech text-[10px] tracking-widest uppercase">
-            <Activity className="w-3.5 h-3.5 text-white/60" />
-            IMMUTABLE SECURITY AUDIT TRAIL
+    <div className="w-full min-h-[calc(100vh-64px)] px-4 sm:px-8 lg:px-12 py-8 flex flex-col justify-start">
+      <div className="w-full max-w-[1720px] mx-auto space-y-6 animate-hero-entrance">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+          <div>
+            <div className="flex items-center gap-2 font-mono-tech text-[10px] tracking-[0.18em] text-white/50 uppercase">
+              <History className="w-3.5 h-3.5 text-white/70" />
+              <span>06 FORENSIC AUDIT TRAIL &amp; IMMUTABILITY</span>
+            </div>
+            <h1 className="font-sans-main text-2xl sm:text-3xl font-normal text-white tracking-tight mt-1">
+              Audit Activity Timeline
+            </h1>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mt-1">
-            Audit Activity
-          </h1>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<RefreshCw className="w-3 h-3" />}
+              onClick={onRefresh}
+            >
+              Sync Audit Stream
+            </Button>
+          </div>
         </div>
 
-        <button
-          onClick={onRefresh}
-          className="px-3.5 py-2 border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono-tech text-xs tracking-wider uppercase transition-colors flex items-center gap-1.5 self-start sm:self-auto"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>REFRESH LOGS</span>
-        </button>
-      </div>
+        {/* Filters and Search Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div className="md:col-span-6">
+            <SearchInput
+              placeholder="Filter by actor email, resource, or event description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+            />
+          </div>
 
-      {/* Filter Controls */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-6 relative">
-          <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by event, user email, resource, or Event ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 text-white font-mono-tech text-xs focus:outline-none focus:border-white transition-colors"
-          />
+          <div className="md:col-span-3">
+            <Select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'ALL EVENT TYPES' },
+                { value: 'LOGIN', label: 'LOGIN' },
+                { value: 'UPLOAD', label: 'UPLOAD' },
+                { value: 'ENCRYPT', label: 'ENCRYPT' },
+                { value: 'DOWNLOAD', label: 'DOWNLOAD' },
+                { value: 'SHARE', label: 'SHARE' },
+                { value: 'REVOKE', label: 'REVOKE' },
+                { value: 'FAILED_ACCESS', label: 'FAILED_ACCESS' },
+                { value: 'INTEGRITY_VERIFIED', label: 'INTEGRITY_VERIFIED' },
+                { value: 'SETTING_CHANGE', label: 'SETTING_CHANGE' },
+              ]}
+            />
+          </div>
+
+          <div className="md:col-span-3">
+            <Select
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'ALL SEVERITIES' },
+                { value: 'INFO', label: 'INFO ONLY' },
+                { value: 'WARNING', label: 'WARNING' },
+                { value: 'CRITICAL', label: 'CRITICAL ONLY' },
+              ]}
+            />
+          </div>
         </div>
 
-        <div className="sm:col-span-3">
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="w-full px-3 py-2.5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 text-white font-mono-tech text-xs focus:outline-none focus:border-white"
-          >
-            <option value="ALL">ALL EVENT TYPES</option>
-            <option value="UPLOAD">UPLOAD</option>
-            <option value="ENCRYPT">ENCRYPT</option>
-            <option value="DOWNLOAD">DOWNLOAD</option>
-            <option value="SHARE">SHARE</option>
-            <option value="REVOKE">REVOKE</option>
-            <option value="DELETE">DELETE</option>
-            <option value="FAILED_ACCESS">FAILED ACCESS (BLOCKED)</option>
-            <option value="INTEGRITY_VERIFIED">INTEGRITY VERIFIED</option>
-            <option value="INTEGRITY_FAILURE">INTEGRITY FAILURE</option>
-            <option value="LOGIN">LOGIN</option>
-          </select>
-        </div>
-
-        <div className="sm:col-span-3">
-          <select
-            value={severityFilter}
-            onChange={(e) => setSeverityFilter(e.target.value)}
-            className="w-full px-3 py-2.5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 text-white font-mono-tech text-xs focus:outline-none focus:border-white"
-          >
-            <option value="ALL">ALL SEVERITIES</option>
-            <option value="INFO">INFO ONLY</option>
-            <option value="WARNING">WARNING ONLY</option>
-            <option value="CRITICAL">CRITICAL ONLY</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Audit Log Table */}
-      {auditLogs.length === 0 ? (
-        <div className="border border-white/15 bg-[#08080a]/75 backdrop-blur-md p-12 text-center font-mono-tech text-xs text-white/50">
-          No security events recorded yet.
-        </div>
-      ) : filteredLogs.length === 0 ? (
-        <div className="border border-white/15 bg-[#08080a]/75 backdrop-blur-md p-8 text-center font-mono-tech text-xs text-white/50">
-          No audit logs matching current filter parameters.
-        </div>
-      ) : (
-        <div className="border border-white/15 bg-[#08080a]/75 backdrop-blur-md overflow-x-auto">
-          <table className="w-full text-left border-collapse" id="audit-log-table">
-            <thead>
-              <tr className="border-b border-white/10 bg-white/[0.02] font-mono-tech text-[10px] text-white/40 tracking-widest uppercase">
-                <th className="py-3 px-4">TIMESTAMP</th>
-                <th className="py-3 px-4">EVENT ID</th>
-                <th className="py-3 px-4">EVENT TYPE</th>
-                <th className="py-3 px-4">ACTOR / IDENTITY</th>
-                <th className="py-3 px-4">RESOURCE</th>
-                <th className="py-3 px-4">RESULT</th>
-                <th className="py-3 px-4">SEVERITY</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 font-mono-tech text-xs">
-              {filteredLogs.map((log) => (
-                <tr
-                  key={log.id}
-                  onClick={() => setSelectedEvent(log)}
-                  className="hover:bg-white/[0.04] cursor-pointer transition-colors"
-                >
-                  <td className="py-3 px-4 text-white/60 whitespace-nowrap">
-                    {new Date(log.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    })}
-                  </td>
-                  <td className="py-3 px-4 text-white/40">{log.id}</td>
-                  <td className="py-3 px-4">
-                    <span className="text-white font-medium">{log.eventType}</span>
-                  </td>
-                  <td className="py-3 px-4 text-white/80 truncate max-w-[160px]">
-                    {log.userEmail}
-                  </td>
-                  <td className="py-3 px-4 text-white/70 truncate max-w-[180px]">
-                    {log.resourceName}
-                  </td>
-                  <td className="py-3 px-4">{getStatusBadge(log.status, log.severity)}</td>
-                  <td className="py-3 px-4 text-[11px]">{getSeverityPill(log.severity)}</td>
+        {/* Forensic Event Table */}
+        <div className="glass-panel rounded-[3px] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left font-mono-tech text-xs sm:text-sm">
+              <thead className="bg-white/[0.04] border-b border-white/10 text-xs tracking-[0.16em] uppercase text-white/50 select-none">
+                <tr>
+                  <th className="py-3.5 px-5">TIMESTAMP</th>
+                  <th className="py-3.5 px-5">EVENT</th>
+                  <th className="py-3.5 px-5">ACTOR</th>
+                  <th className="py-3.5 px-5">RESOURCE</th>
+                  <th className="py-3.5 px-5">STATUS</th>
+                  <th className="py-3.5 px-5">SEVERITY</th>
+                  <th className="py-3.5 px-5">DETAILS</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Selected Event Details Modal */}
-      {selectedEvent && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-lg bg-[#0a0a0c] border border-white/20 p-6 shadow-2xl relative space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-white/70" />
-                <span className="font-mono-tech text-xs text-white font-bold uppercase">
-                  AUDIT EVENT INSPECTION // {selectedEvent.id}
-                </span>
-              </div>
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="text-white/60 hover:text-white font-mono-tech text-xs"
-              >
-                [ CLOSE ]
-              </button>
-            </div>
-
-            <div className="space-y-3 font-mono-tech text-xs">
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div>
-                  <span className="text-white/40">TIMESTAMP:</span>{' '}
-                  <span className="text-white">{new Date(selectedEvent.timestamp).toISOString()}</span>
-                </div>
-                <div>
-                  <span className="text-white/40">EVENT TYPE:</span>{' '}
-                  <span className="text-white font-semibold">{selectedEvent.eventType}</span>
-                </div>
-                <div>
-                  <span className="text-white/40">ACTOR:</span>{' '}
-                  <span className="text-white">{selectedEvent.userEmail}</span>
-                </div>
-                <div>
-                  <span className="text-white/40">RESOURCE:</span>{' '}
-                  <span className="text-white">{selectedEvent.resourceName}</span>
-                </div>
-                <div>
-                  <span className="text-white/40">RESULT STATUS:</span>{' '}
-                  <span className="text-white">{selectedEvent.status}</span>
-                </div>
-                <div>
-                  <span className="text-white/40">SEVERITY:</span>{' '}
-                  <span className="text-white">{selectedEvent.severity}</span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-white/10">
-                <div className="text-[10px] text-white/40 uppercase mb-1">DETAILED AUDIT PAYLOAD:</div>
-                <div className="p-3 bg-black border border-white/10 text-white/80 leading-relaxed text-[11px]">
-                  {selectedEvent.details}
-                </div>
-              </div>
-
-              {selectedEvent.ipAddress && (
-                <div className="text-[11px] text-white/50">
-                  Origin IP: <span className="text-white/80">{selectedEvent.ipAddress}</span>
-                </div>
-              )}
-            </div>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-14 text-center text-white/40 text-sm">
+                      [ ZERO AUDIT EVENTS RECORDED ]
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLogs.map((log) => (
+                    <tr
+                      key={log.id}
+                      onClick={() => setSelectedEvent(log)}
+                      className="hover:bg-white/[0.04] transition-colors cursor-pointer group"
+                    >
+                      <td className="py-3.5 px-5 text-white/50 whitespace-nowrap text-xs">
+                        {new Date(log.timestamp).toLocaleString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                      </td>
+                      <td className="py-3.5 px-5 text-white font-semibold whitespace-nowrap text-sm">
+                        {log.eventType}
+                      </td>
+                      <td className="py-3.5 px-5 text-white/70 truncate max-w-[170px] text-xs sm:text-sm">
+                        {log.userEmail}
+                      </td>
+                      <td className="py-3.5 px-5 text-white/80 truncate max-w-[200px] text-xs sm:text-sm">
+                        {log.resourceName}
+                      </td>
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        {getStatusBadge(log.status, log.severity)}
+                      </td>
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <SeverityBadge severity={log.severity} />
+                      </td>
+                      <td className="py-3.5 px-5 text-white/60 text-xs truncate max-w-[260px]">
+                        {log.details}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Event Details Drawer */}
+      <Drawer
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        title={selectedEvent?.eventType || 'Audit Event'}
+        eyebrow="IMMUTABLE AUDIT LOG ENTRY"
+        subtitle={`Event ID: ${selectedEvent?.id}`}
+        width="md"
+      >
+        {selectedEvent && (
+          <div className="space-y-4 font-mono-tech text-xs">
+            <div className="p-3.5 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+              <div className="text-[9.5px] text-white/40 uppercase">TIMESTAMP</div>
+              <div className="text-white font-semibold">
+                {new Date(selectedEvent.timestamp).toISOString()}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-0.5">
+                <div className="text-[9.5px] text-white/40 uppercase">STATUS</div>
+                <div>{getStatusBadge(selectedEvent.status, selectedEvent.severity)}</div>
+              </div>
+              <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-0.5">
+                <div className="text-[9.5px] text-white/40 uppercase">SEVERITY</div>
+                <div><SeverityBadge severity={selectedEvent.severity} /></div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+              <div className="text-[9.5px] text-white/40 uppercase">ACTOR</div>
+              <div className="text-white">{selectedEvent.userEmail}</div>
+            </div>
+
+            <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+              <div className="text-[9.5px] text-white/40 uppercase">RESOURCE</div>
+              <div className="text-white">{selectedEvent.resourceName}</div>
+            </div>
+
+            <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+              <div className="text-[9.5px] text-white/40 uppercase">FULL FORENSIC DETAILS</div>
+              <div className="text-white/80 font-sans-main text-xs leading-relaxed">
+                {selectedEvent.details}
+              </div>
+            </div>
+
+            {selectedEvent.ipAddress && (
+              <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+                <div className="text-[9.5px] text-white/40 uppercase">CLIENT IP ADDRESS</div>
+                <div className="text-white font-mono">{selectedEvent.ipAddress}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };

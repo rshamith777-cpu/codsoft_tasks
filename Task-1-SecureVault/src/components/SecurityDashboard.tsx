@@ -11,16 +11,31 @@ import {
   RefreshCw,
   AlertCircle,
   Bug,
+  Terminal,
+  Cpu,
+  Zap,
 } from 'lucide-react';
-import { SecurityPosture } from '../types';
+import { SecurityPosture, VaultFile, AuditEvent } from '../types';
 import { api } from '../services/api';
+import { Button } from './ui/Button';
+import { StatusIndicator, IntegrityBadge } from './ui/Badges';
+import { SecurityAgentsView } from './SecurityAgentsView';
+import { AutomationsView } from './AutomationsView';
 
 interface SecurityDashboardProps {
   posture: SecurityPosture | null;
+  files?: VaultFile[];
+  auditLogs?: AuditEvent[];
   onRefresh: () => void;
 }
 
-export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ posture, onRefresh }) => {
+export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({
+  posture,
+  files = [],
+  auditLogs = [],
+  onRefresh,
+}) => {
+  const [activeTab, setActiveTab] = useState<'posture' | 'intelligence' | 'automations'>('posture');
   const [runningAudit, setRunningAudit] = useState(false);
   const [auditResult, setAuditResult] = useState<{ checked: number; verified: number; failed: number } | null>(null);
   const [simulatingIntrusion, setSimulatingIntrusion] = useState(false);
@@ -57,204 +72,225 @@ export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ posture, o
   const status = posture?.vaultStatus || 'SECURE';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-2 text-white/50 font-mono-tech text-[10px] tracking-widest uppercase">
-            <Activity className="w-3.5 h-3.5 text-white/60" />
-            SECURITY POSTURE & CONTINUOUS AUDITING
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mt-1">
-            Security Posture
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onRefresh}
-            className="px-3.5 py-2 border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono-tech text-xs tracking-wider uppercase transition-colors flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>SYNC POSTURE</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Primary Status Banner */}
-      <div
-        className={`p-6 border ${
-          status === 'SECURE'
-            ? 'border-emerald-500/40 bg-emerald-950/20'
-            : status === 'WARNING'
-            ? 'border-amber-500/40 bg-amber-950/20'
-            : 'border-red-500/40 bg-red-950/20'
-        } backdrop-blur-md`}
-        style={{ borderRadius: '8px' }}
-      >
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div
-              className={`w-10 h-10 border flex items-center justify-center ${
-                status === 'SECURE'
-                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                  : status === 'WARNING'
-                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
-                  : 'border-red-500/50 bg-red-500/10 text-red-400'
-              }`}
-            >
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-mono-tech text-[10px] text-white/50 uppercase tracking-widest">
-                AGGREGATED VAULT INTEGRITY STATUS
-              </div>
-              <div className="text-lg font-mono-tech font-bold tracking-wider text-white mt-0.5">
-                VAULT STATUS: {status}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-right font-mono-tech text-xs text-white/60">
-            <div>INTEGRITY VERIFICATION RATE: <span className="text-emerald-400 font-bold">{posture?.integrityRate ?? 100}%</span></div>
-            <div className="text-[10px] text-white/40 mt-1">
-              LAST AUDITED: {posture?.lastAuditTimestamp ? new Date(posture.lastAuditTimestamp).toLocaleString() : 'JUST NOW'}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Real Posture Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Files Stored */}
-        <div className="p-5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 space-y-2">
-          <div className="flex items-center justify-between text-white/40 font-mono-tech text-[10px] uppercase tracking-wider">
-            <span>FILES STORED</span>
-            <FileCheck className="w-3.5 h-3.5" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-mono-tech font-medium text-white">
-            {posture?.totalFiles ?? 0}
-          </div>
-          <div className="text-[11px] font-mono-tech text-white/50">
-            Total files under management
-          </div>
-        </div>
-
-        {/* Encrypted Files */}
-        <div className="p-5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 space-y-2">
-          <div className="flex items-center justify-between text-white/40 font-mono-tech text-[10px] uppercase tracking-wider">
-            <span>ENCRYPTED (AES-256-GCM)</span>
-            <Lock className="w-3.5 h-3.5 text-emerald-400" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-mono-tech font-medium text-emerald-400">
-            {posture?.encryptedFiles ?? 0}
-          </div>
-          <div className="text-[11px] font-mono-tech text-white/50">
-            100% encrypted at rest
-          </div>
-        </div>
-
-        {/* Active Shares */}
-        <div className="p-5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 space-y-2">
-          <div className="flex items-center justify-between text-white/40 font-mono-tech text-[10px] uppercase tracking-wider">
-            <span>ACTIVE SHARES</span>
-            <Share2 className="w-3.5 h-3.5 text-blue-400" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-mono-tech font-medium text-white">
-            {posture?.activeShares ?? 0}
-          </div>
-          <div className="text-[11px] font-mono-tech text-white/50">
-            Controlled access links
-          </div>
-        </div>
-
-        {/* Security Events */}
-        <div className="p-5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 space-y-2">
-          <div className="flex items-center justify-between text-white/40 font-mono-tech text-[10px] uppercase tracking-wider">
-            <span>SECURITY AUDIT EVENTS</span>
-            <Activity className="w-3.5 h-3.5 text-amber-400" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-mono-tech font-medium text-white">
-            {posture?.securityEventsCount ?? 0}
-          </div>
-          <div className="text-[11px] font-mono-tech text-white/50">
-            {posture?.failedAccessCount ?? 0} failed access attempts
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive Cryptographic Verification Station */}
-      <div className="border border-white/15 bg-[#08080a]/75 backdrop-blur-md p-6 sm:p-8 space-y-6">
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+    <div className="w-full min-h-[calc(100vh-64px)] px-4 sm:px-8 lg:px-12 py-8 flex flex-col justify-start">
+      <div className="w-full max-w-[1720px] mx-auto space-y-6 animate-hero-entrance">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
           <div>
-            <h2 className="text-base font-mono-tech font-semibold tracking-wider text-white uppercase">
-              Cryptographic Integrity Verification Engine
-            </h2>
-            <p className="text-xs text-white/60 mt-1">
-              Recalculate authentic SHA-256 hashes across all stored cipher blobs on disk and compare against stored fingerprints.
-            </p>
+            <div className="flex items-center gap-2 font-mono-tech text-[10px] tracking-[0.18em] text-white/50 uppercase">
+              <Activity className="w-3.5 h-3.5 text-white/70" />
+              <span>05 SECURITY POSTURE, INTELLIGENCE &amp; AUTOMATION</span>
+            </div>
+            <h1 className="font-sans-main text-2xl sm:text-3xl font-normal text-white tracking-tight mt-1">
+              Active Cryptographic Defense
+            </h1>
           </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<RefreshCw className="w-3 h-3" />}
+              onClick={onRefresh}
+            >
+              Sync State
+            </Button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-2 border-b border-white/10 pb-1">
           <button
-            id="btn-run-full-integrity-audit"
-            onClick={handleRunIntegrityAudit}
-            disabled={runningAudit}
-            className="px-4 py-2.5 bg-white text-black hover:bg-white/90 font-mono-tech font-bold text-xs tracking-widest uppercase transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0"
+            onClick={() => setActiveTab('posture')}
+            className={`py-2 px-3 font-mono-tech text-xs uppercase tracking-wider transition-colors rounded-[2px] flex items-center gap-2 ${
+              activeTab === 'posture'
+                ? 'bg-white text-black font-semibold'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+            }`}
           >
-            {runningAudit ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>AUDITING DISK BLOBS...</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>RUN INTEGRITY AUDIT</span>
-              </>
-            )}
+            <Shield className="w-3.5 h-3.5" />
+            <span>Posture &amp; Controls</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('intelligence')}
+            className={`py-2 px-3 font-mono-tech text-xs uppercase tracking-wider transition-colors rounded-[2px] flex items-center gap-2 ${
+              activeTab === 'intelligence'
+                ? 'bg-white text-black font-semibold'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Security Intelligence (8 Agents)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('automations')}
+            className={`py-2 px-3 font-mono-tech text-xs uppercase tracking-wider transition-colors rounded-[2px] flex items-center gap-2 ${
+              activeTab === 'automations'
+                ? 'bg-white text-black font-semibold'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Automations (AUTO-001 — 010)</span>
           </button>
         </div>
 
-        {/* Audit Results Box */}
-        {auditResult && (
-          <div className="p-4 border border-emerald-500/40 bg-emerald-500/10 font-mono-tech text-xs text-emerald-300 space-y-1">
-            <div className="font-semibold text-emerald-400 uppercase">
-              AUDIT COMPLETED // {auditResult.verified}/{auditResult.checked} OBJECTS VERIFIED
+        {/* Tab 1: Posture & Active Defense Controls */}
+        {activeTab === 'posture' && (
+          <div className="space-y-6">
+            {/* Primary Status Banner */}
+            <div
+              className={`p-6 border ${
+                status === 'SECURE'
+                  ? 'border-emerald-500/35 bg-emerald-950/20'
+                  : status === 'WARNING'
+                  ? 'border-amber-500/35 bg-amber-950/20'
+                  : 'border-red-500/35 bg-red-950/20'
+              } backdrop-blur-md rounded-[2px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className={`w-12 h-12 border flex items-center justify-center rounded-[2px] ${
+                    status === 'SECURE'
+                      ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                      : status === 'WARNING'
+                      ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
+                      : 'border-red-500/50 bg-red-500/10 text-red-400'
+                  }`}
+                >
+                  <Shield className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-sans-main text-xl sm:text-2xl font-normal text-white">
+                      Vault Status: {status}
+                    </h3>
+                    <StatusIndicator status={status === 'SECURE' ? 'ONLINE' : status === 'WARNING' ? 'WARNING' : 'CRITICAL'} />
+                  </div>
+                  <p className="font-sans-main text-sm text-white/70 mt-1 max-w-[640px] leading-relaxed">
+                    {status === 'SECURE'
+                      ? 'All cryptographic checks passing. Zero integrity failures. RBAC and token bounds actively enforced.'
+                      : status === 'WARNING'
+                      ? 'Elevated failed access attempts detected in audit trail. Scrutiny active.'
+                      : 'Critical integrity anomaly detected. Immediate remediation recommended.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button
+                  variant="primary"
+                  size="md"
+                  leftIcon={<RefreshCw className="w-4 h-4" />}
+                  onClick={handleRunIntegrityAudit}
+                  isLoading={runningAudit}
+                >
+                  Run Integrity Check
+                </Button>
+
+                <Button
+                  variant="danger"
+                  size="md"
+                  leftIcon={<Bug className="w-4 h-4" />}
+                  onClick={handleSimulateIntrusion}
+                  isLoading={simulatingIntrusion}
+                >
+                  Simulate Intrusion
+                </Button>
+              </div>
             </div>
-            <div>
-              Checked: {auditResult.checked} | Verified Authentic: {auditResult.verified} | Integrity Failures: {auditResult.failed}
+
+            {/* Test Results / Notifications */}
+            {auditResult && (
+              <div className="p-4 bg-emerald-950/20 border border-emerald-500/35 rounded-[3px] font-mono-tech text-xs sm:text-sm text-emerald-300 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    STORAGE INTEGRITY REPORT: {auditResult.verified}/{auditResult.checked} files cryptographically verified with authentic SHA-256 hashes.
+                  </span>
+                </div>
+                <button type="button" onClick={() => setAuditResult(null)} className="text-white/40 hover:text-white p-1">
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {simulatedMsg && (
+              <div className="p-4 bg-amber-950/20 border border-amber-500/35 rounded-[3px] font-mono-tech text-xs sm:text-sm text-amber-300 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <span>SIMULATED INTRUSION: {simulatedMsg}</span>
+                </div>
+                <button type="button" onClick={() => setSimulatedMsg(null)} className="text-white/40 hover:text-white p-1">
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Verification Controls Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-5 glass-card rounded-[3px] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono-tech text-xs text-white/50 uppercase tracking-wider font-medium">
+                    ENCRYPTION STANDARD
+                  </span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="font-sans-main text-lg text-white font-medium">
+                  AES-256-GCM Hardware Cipher
+                </div>
+                <div className="font-mono-tech text-xs sm:text-sm text-white/60 leading-relaxed">
+                  Unique 96-bit IV generated per file. Decryption verifies 128-bit authentication tag before releasing payload.
+                </div>
+              </div>
+
+              <div className="p-5 glass-card rounded-[3px] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono-tech text-xs text-white/50 uppercase tracking-wider font-medium">
+                    INTEGRITY VERIFICATION
+                  </span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="font-sans-main text-lg text-white font-medium">
+                  Continuous SHA-256 Digest Match
+                </div>
+                <div className="font-mono-tech text-xs sm:text-sm text-white/60 leading-relaxed">
+                  Hashes recomputed upon every download and storage audit to guarantee bitwise integrity and prevent bit flipping.
+                </div>
+              </div>
+
+              <div className="p-5 glass-card rounded-[3px] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono-tech text-xs text-white/50 uppercase tracking-wider font-medium">
+                    ACCESS POLICY ENFORCEMENT
+                  </span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="font-sans-main text-lg text-white font-medium">
+                  Zero-Trust RBAC &amp; Expiration
+                </div>
+                <div className="font-mono-tech text-xs sm:text-sm text-white/60 leading-relaxed">
+                  Tokens expire automatically upon reaching expiration bounds or maximum allowed access counts.
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Security Controls Simulation Station */}
-        <div className="pt-4 border-t border-white/10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <div className="font-mono-tech text-xs text-white font-medium">
-                RBAC Access Violation Simulation
-              </div>
-              <p className="text-xs text-white/50 mt-0.5">
-                Simulate an unauthorized access probe to verify access-control enforcement and security event generation in the audit pipeline.
-              </p>
-            </div>
-            <button
-              id="btn-simulate-intrusion"
-              onClick={handleSimulateIntrusion}
-              disabled={simulatingIntrusion}
-              className="px-4 py-2 border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-300 font-mono-tech text-xs tracking-wider uppercase transition-colors shrink-0 flex items-center gap-1.5"
-            >
-              <Bug className="w-3.5 h-3.5 text-red-400" />
-              <span>SIMULATE UNAUTHORIZED PROBE</span>
-            </button>
-          </div>
+        {/* Tab 2: Security Intelligence (8 Agents) */}
+        {activeTab === 'intelligence' && (
+          <SecurityAgentsView
+            files={files}
+            posture={posture}
+            auditLogs={auditLogs}
+            onRefresh={onRefresh}
+          />
+        )}
 
-          {simulatedMsg && (
-            <div className="mt-3 p-3 border border-amber-500/30 bg-amber-500/10 text-amber-300 font-mono-tech text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{simulatedMsg}</span>
-            </div>
-          )}
-        </div>
+        {/* Tab 3: Automations Orchestration (AUTO-001 - AUTO-010) */}
+        {activeTab === 'automations' && <AutomationsView onRefresh={onRefresh} />}
       </div>
     </div>
   );

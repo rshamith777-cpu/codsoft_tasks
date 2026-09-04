@@ -27,6 +27,10 @@ export interface ShareLink {
   accessCount: number;
   maxAccessCount: number | null;
   createdAt: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  ownerEmail?: string;
 }
 
 export interface VaultFile {
@@ -65,7 +69,10 @@ export type AuditEventType =
   | 'INTEGRITY_VERIFIED'
   | 'SETTING_CHANGE'
   | 'DEMO_SEED'
-  | 'DEMO_RESET';
+  | 'DEMO_RESET'
+  | 'AGENT_ANALYSIS'
+  | 'AUTOMATION_RUN'
+  | 'REMEDIATION_ACTION';
 
 export type AuditStatus = 'SUCCESS' | 'DENIED' | 'FAILED' | 'WARNING';
 export type SeverityLevel = 'INFO' | 'WARNING' | 'CRITICAL';
@@ -102,6 +109,7 @@ export interface SecuritySettings {
   enforceDownloadVerification: boolean;
   auditLoggingEnabled: boolean;
   rateLimitingEnabled: boolean;
+  geminiApiKey?: string;
 }
 
 export interface ThreatModelItem {
@@ -111,4 +119,61 @@ export interface ThreatModelItem {
   mitigation: string;
   status: 'IMPLEMENTED' | 'ACTIVE_ENFORCEMENT' | 'MONITORED';
   category: string;
+}
+
+// Security Agent Definitions
+export type AgentState = 'READY' | 'ANALYZING' | 'WAITING APPROVAL' | 'COMPLETE' | 'FAILED';
+
+export interface AgentAction {
+  id: string;
+  label: string;
+  description: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  type: 'REVOKE_SHARE' | 'VERIFY_ALL' | 'UPDATE_POLICY' | 'DELETE_FILE' | 'PURGE_DEMO';
+  targetId?: string;
+  payload?: any;
+}
+
+export interface AgentReport {
+  agentId: string;
+  agentName: string;
+  purpose: string;
+  state: AgentState;
+  lastRunTimestamp: string;
+  factsObserved: string[];
+  derivedAssessment: string;
+  severity: SeverityLevel;
+  recommendedActions: AgentAction[];
+}
+
+// Automation Definitions
+export type AutomationState =
+  | 'ACTIVE'
+  | 'IDLE'
+  | 'RUNNING'
+  | 'AWAITING APPROVAL'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'DISABLED';
+
+export interface AutomationItem {
+  id: string; // e.g. 'AUTO-001'
+  name: string;
+  trigger: string;
+  actionSummary: string;
+  state: AutomationState;
+  lastRun: string;
+  outcome: string;
+  evidence: string;
+  approvalRequired: boolean;
+  severity: SeverityLevel;
+}
+
+export interface CopilotResponse {
+  available: boolean;
+  source: 'GEMINI_AI' | 'LOCAL SECURITY ANALYSIS' | 'UNAVAILABLE';
+  text?: string;
+  error?: string;
+  fallbackLabel?: string;
+  localAnalysis?: string;
 }

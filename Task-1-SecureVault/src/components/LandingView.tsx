@@ -129,8 +129,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => handleNavClick(item.id)}
-                  className={`relative py-1 font-mono-tech text-[11px] tracking-[0.16em] uppercase transition-colors ${
-                    isActive ? 'text-white' : 'text-white/60 hover:text-white'
+                  className={`relative py-1 font-mono-tech text-xs sm:text-sm tracking-[0.16em] uppercase transition-colors ${
+                    isActive ? 'text-white font-semibold' : 'text-white/60 hover:text-white'
                   }`}
                 >
                   {item.label}
@@ -148,7 +148,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               id="top-nav-enter-vault-btn"
               type="button"
               onClick={onEnterVault}
-              className="font-mono-tech text-[11px] tracking-[0.16em] uppercase text-white bg-transparent border border-white/[0.28] rounded-[3px] px-5 py-3 hover:bg-white/[0.10] transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
+              className="font-mono-tech text-xs sm:text-sm tracking-[0.16em] uppercase text-white bg-transparent border border-white/[0.28] rounded-[3px] px-6 py-3.5 hover:bg-white/[0.10] transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
             >
               {isLoggedIn ? 'OPEN VAULT' : 'ENTER VAULT'}
             </button>
@@ -171,7 +171,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden mt-4 pt-4 border-t border-white/10 flex flex-col gap-3 font-mono-tech text-xs tracking-widest uppercase">
+          <div className="lg:hidden mt-4 pt-4 border-t border-white/10 flex flex-col gap-3 font-mono-tech text-sm tracking-widest uppercase">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
@@ -216,13 +216,13 @@ export const LandingView: React.FC<LandingViewProps> = ({
           ZONE 2 — MAIN HERO (Asymmetric Two-Column)
           ============================================================ */}
       <main className="relative z-10 w-full flex-1 flex items-center px-6 sm:px-10 lg:px-[clamp(24px,5vw,90px)] py-8 lg:py-0">
-        <div className="w-full max-w-[1720px] mx-auto grid grid-cols-1 lg:grid-cols-[52%_48%] items-center gap-10 lg:gap-8">
+        <div className="w-full max-w-[1720px] mx-auto grid grid-cols-1 lg:grid-cols-[50%_50%] items-center gap-10 lg:gap-12">
           {/* ------------------------------------------------------------
               LEFT HERO AREA (Negative Space, Headline, Subtext, Micro Status)
               ------------------------------------------------------------ */}
           <div className="flex flex-col justify-center animate-hero-entrance">
             {/* Technical Eyebrow */}
-            <div className="font-mono-tech text-[10px] tracking-[0.18em] text-white/[0.58] uppercase mb-4 sm:mb-6">
+            <div className="font-mono-tech text-xs tracking-[0.20em] text-white/[0.65] uppercase mb-4 sm:mb-6">
               [ ENCRYPTED FILE INFRASTRUCTURE ]
             </div>
 
@@ -241,16 +241,16 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </h1>
 
             {/* Subtext */}
-            <p className="font-sans-main font-normal text-[15px] sm:text-[16px] lg:text-[17px] text-white/[0.62] leading-[1.6] max-w-[480px] mb-6 sm:mb-8">
+            <p className="font-sans-main font-normal text-[16px] sm:text-[17px] lg:text-[18px] text-white/[0.70] leading-[1.6] max-w-[520px] mb-6 sm:mb-8">
               Encrypted file sharing with verified integrity, granular access control, and complete security visibility.
             </p>
 
             {/* Micro Status Technical Line */}
-            <div className="font-mono-tech text-[10px] sm:text-[11px] tracking-[0.12em] text-white/[0.60] flex items-center gap-3 sm:gap-4 flex-wrap">
+            <div className="font-mono-tech text-xs tracking-[0.14em] text-white/[0.70] flex items-center gap-3 sm:gap-4 flex-wrap">
               <span>AES-256-GCM</span>
-              <span className="text-white/25">/</span>
+              <span className="text-white/30">/</span>
               <span>SHA-256 VERIFIED</span>
-              <span className="text-white/25">/</span>
+              <span className="text-white/30">/</span>
               <span>RBAC ENFORCED</span>
             </div>
           </div>
@@ -258,28 +258,28 @@ export const LandingView: React.FC<LandingViewProps> = ({
           {/* ------------------------------------------------------------
               RIGHT HERO AREA (Open Security Terminal Interaction)
               ------------------------------------------------------------ */}
-          <div className="w-full max-w-[420px] lg:ml-auto flex flex-col justify-center animate-hero-entrance animation-delay-200">
+          <div className="w-full max-w-[500px] lg:ml-auto flex flex-col justify-center animate-hero-entrance animation-delay-200">
             {/* Top Label */}
-            <div className="inline-flex items-center self-start px-3 py-2 bg-white/[0.07] border border-white/[0.12] rounded-none font-mono-tech text-[11px] tracking-[0.18em] text-white/90 uppercase mb-4 sm:mb-5">
+            <div className="inline-flex items-center self-start px-3.5 py-2 bg-white/[0.07] border border-white/[0.14] rounded-[2px] font-mono-tech text-xs tracking-[0.18em] text-white/90 uppercase mb-4 sm:mb-5">
               [ SECURE ACCESS ]
             </div>
 
             {/* Right Title */}
-            <h2 className="font-sans-main font-normal text-[clamp(28px,2.8vw,44px)] leading-[0.98] tracking-[-0.04em] text-white mb-2.5">
+            <h2 className="font-sans-main font-normal text-[clamp(30px,3vw,48px)] leading-[0.98] tracking-[-0.04em] text-white mb-3">
               ENTER THE
               <br />
               SECURE VAULT
             </h2>
 
             {/* Right Description */}
-            <p className="font-sans-main font-normal text-[14px] text-white/[0.52] leading-relaxed max-w-[360px] mb-6">
+            <p className="font-sans-main font-normal text-sm sm:text-base text-white/60 leading-relaxed max-w-[420px] mb-6">
               Access encrypted objects, manage permissions, and review your security activity.
             </p>
 
             {/* Minimal Entry / Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4 w-full">
-              <div className="space-y-1">
-                <label className="block font-mono-tech text-[10px] tracking-[0.16em] text-white/[0.50] uppercase">
+              <div className="space-y-1.5">
+                <label className="block font-mono-tech text-xs tracking-[0.16em] text-white/60 uppercase">
                   EMAIL
                 </label>
                 <input
@@ -288,12 +288,12 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="officer@securevault.internal"
-                  className="w-full bg-transparent border-none border-b border-white/25 focus:border-b-white/85 rounded-none py-3 px-0.5 font-sans-main text-[15px] text-white placeholder:text-white/20 focus:outline-none transition-colors"
+                  className="w-full bg-transparent border-none border-b border-white/30 focus:border-b-white rounded-none py-3.5 px-0.5 font-sans-main text-base text-white placeholder:text-white/25 focus:outline-none transition-colors"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block font-mono-tech text-[10px] tracking-[0.16em] text-white/[0.50] uppercase">
+              <div className="space-y-1.5">
+                <label className="block font-mono-tech text-xs tracking-[0.16em] text-white/60 uppercase">
                   PASSWORD
                 </label>
                 <input
@@ -302,23 +302,23 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full bg-transparent border-none border-b border-white/25 focus:border-b-white/85 rounded-none py-3 px-0.5 font-sans-main text-[15px] text-white placeholder:text-white/20 focus:outline-none transition-colors"
+                  className="w-full bg-transparent border-none border-b border-white/30 focus:border-b-white rounded-none py-3.5 px-0.5 font-sans-main text-base text-white placeholder:text-white/25 focus:outline-none transition-colors"
                 />
               </div>
 
               {errorMessage && (
-                <div className="font-mono-tech text-[11px] text-red-400 tracking-wider pt-1">
+                <div className="font-mono-tech text-xs text-red-400 tracking-wider pt-1">
                   [{errorMessage}]
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="pt-2 space-y-2.5">
+              <div className="pt-3 space-y-3">
                 <button
                   id="hero-primary-enter-btn"
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full h-[54px] bg-white/[0.92] hover:bg-white text-[#050505] border-none rounded-[2px] font-mono-tech text-[11px] font-medium tracking-[0.18em] uppercase transition-all duration-200 hover:-translate-y-[1px] flex items-center justify-center cursor-pointer shadow-md disabled:opacity-50"
+                  className="w-full h-[56px] bg-white/[0.92] hover:bg-white text-[#050505] border-none rounded-[3px] font-mono-tech text-xs sm:text-sm font-semibold tracking-[0.18em] uppercase transition-all duration-200 hover:-translate-y-[1px] flex items-center justify-center cursor-pointer shadow-md disabled:opacity-50"
                 >
                   {isSubmitting
                     ? 'AUTHENTICATING...'
@@ -331,7 +331,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
                   id="hero-secondary-demo-btn"
                   type="button"
                   onClick={onRunDemo}
-                  className="w-full h-[54px] bg-transparent hover:bg-white/[0.08] text-white border border-white/[0.24] rounded-[2px] font-mono-tech text-[11px] font-medium tracking-[0.18em] uppercase transition-all duration-200 flex items-center justify-center cursor-pointer"
+                  className="w-full h-[56px] bg-transparent hover:bg-white/[0.08] text-white border border-white/[0.24] rounded-[3px] font-mono-tech text-xs sm:text-sm font-medium tracking-[0.18em] uppercase transition-all duration-200 flex items-center justify-center cursor-pointer"
                 >
                   RUN SECURITY DEMO
                 </button>
@@ -339,39 +339,39 @@ export const LandingView: React.FC<LandingViewProps> = ({
             </form>
 
             {/* Right Technical Metadata (Compact 2-Column Layout with Thin Dividers) */}
-            <div className="mt-6 pt-4 border-t border-white/[0.12] grid grid-cols-2 gap-x-6 gap-y-3 font-mono-tech text-[10.5px]">
+            <div className="mt-7 pt-4 border-t border-white/[0.12] grid grid-cols-2 gap-x-6 gap-y-3.5 font-mono-tech">
               <div className="pb-2 border-b border-white/[0.08]">
-                <div className="text-white/40 tracking-[0.14em] uppercase text-[9px] mb-0.5">
+                <div className="text-white/50 tracking-[0.14em] uppercase text-xs mb-0.5">
                   ENCRYPTION
                 </div>
-                <div className="text-white/90 font-medium tracking-wider">
+                <div className="text-white font-medium tracking-wider text-sm">
                   AES-256-GCM
                 </div>
               </div>
 
               <div className="pb-2 border-b border-white/[0.08]">
-                <div className="text-white/40 tracking-[0.14em] uppercase text-[9px] mb-0.5">
+                <div className="text-white/50 tracking-[0.14em] uppercase text-xs mb-0.5">
                   INTEGRITY
                 </div>
-                <div className="text-white/90 font-medium tracking-wider">
+                <div className="text-white font-medium tracking-wider text-sm">
                   SHA-256
                 </div>
               </div>
 
               <div>
-                <div className="text-white/40 tracking-[0.14em] uppercase text-[9px] mb-0.5">
+                <div className="text-white/50 tracking-[0.14em] uppercase text-xs mb-0.5">
                   ACCESS
                 </div>
-                <div className="text-white/90 font-medium tracking-wider">
+                <div className="text-white font-medium tracking-wider text-sm">
                   OWNER / EDITOR / VIEWER
                 </div>
               </div>
 
               <div>
-                <div className="text-white/40 tracking-[0.14em] uppercase text-[9px] mb-0.5">
+                <div className="text-white/50 tracking-[0.14em] uppercase text-xs mb-0.5">
                   AUDIT
                 </div>
-                <div className="text-white/90 font-medium tracking-wider">
+                <div className="text-white font-medium tracking-wider text-sm">
                   IMMUTABLE
                 </div>
               </div>
@@ -384,17 +384,17 @@ export const LandingView: React.FC<LandingViewProps> = ({
           ZONE 3 — BOTTOM SECURITY STATUS
           ============================================================ */}
       <footer className="relative z-20 border-t border-white/[0.12] px-6 sm:px-10 lg:px-[clamp(24px,5vw,90px)] py-[18px]">
-        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono-tech text-[9.5px] text-white/[0.45] tracking-[0.14em] uppercase">
+        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono-tech text-xs text-white/50 tracking-[0.14em] uppercase">
           {/* Bottom Left */}
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/90 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400/90 inline-block" />
             <span>SYSTEM STATUS</span>
-            <span className="text-white/25">//</span>
-            <span className="text-white/80">VAULT ONLINE</span>
+            <span className="text-white/30">//</span>
+            <span className="text-white/90 font-medium">VAULT ONLINE</span>
           </div>
 
           {/* Bottom Center */}
-          <div className="hidden md:flex items-center gap-3 text-white/50">
+          <div className="hidden md:flex items-center gap-3 text-white/60">
             <span>AES-256-GCM</span>
             <span className="text-white/20">/</span>
             <span>SHA-256</span>
@@ -407,8 +407,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
           {/* Bottom Right */}
           <div className="flex items-center gap-2">
             <span>SECURE FILE INFRASTRUCTURE</span>
-            <span className="text-white/25">//</span>
-            <span className="text-white/80">v1.0</span>
+            <span className="text-white/30">//</span>
+            <span className="text-white/90 font-medium">v1.0</span>
           </div>
         </div>
       </footer>

@@ -5,6 +5,7 @@ import {
   SecurityPosture,
   SecuritySettings,
   ShareLink,
+  CopilotResponse,
 } from '../types';
 
 const TOKEN_KEY = 'securevault_auth_token';
@@ -321,5 +322,95 @@ export const api = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to reset demo');
+  },
+
+  async getAllShares(): Promise<ShareLink[]> {
+    const res = await fetch('/api/vault/all-shares', {
+      headers: getHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to fetch shares');
+    return data.shares || [];
+  },
+
+  async getAutomations(): Promise<any[]> {
+    const res = await fetch('/api/security/automations', {
+      headers: getHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to fetch automations');
+    return data.automations || [];
+  },
+
+  async runAutomation(automationId: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch('/api/security/run-automation', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ automationId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to execute automation');
+    return data;
+  },
+
+  async executeAgentAction(action: {
+    actionId: string;
+    type: string;
+    targetId?: string;
+    payload?: any;
+  }): Promise<{ success: boolean; message: string }> {
+    const res = await fetch('/api/security/agent-action', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(action),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to execute agent remediation');
+    return data;
+  },
+
+  // AI Security Copilot
+  async getAiStatus(): Promise<{ configured: boolean; model: string; localFallbackAvailable: boolean; activeEngine?: string }> {
+    try {
+      const res = await fetch('/api/ai/status');
+      if (!res.ok) return { configured: false, model: 'gemini-2.0-flash', localFallbackAvailable: true };
+      return await res.json();
+    } catch {
+      return { configured: false, model: 'gemini-2.0-flash', localFallbackAvailable: true };
+    }
+  },
+
+  async askCopilot(prompt: string, mode?: 'ai' | 'local'): Promise<CopilotResponse> {
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ prompt, mode }),
+    });
+    const data = await res.json();
+    if (!res.ok && res.status !== 503) {
+      throw new Error(data.error || 'Request to Copilot service failed');
+    }
+    return data;
+  },
+
+  async configureAiKey(apiKey: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch('/api/ai/configure-key', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ apiKey }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to configure Gemini API key');
+    return data;
+  },
+
+  async removeAiKey(): Promise<{ success: boolean; message: string }> {
+    const res = await fetch('/api/ai/remove-key', {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to disconnect Gemini API key');
+    return data;
   },
 };

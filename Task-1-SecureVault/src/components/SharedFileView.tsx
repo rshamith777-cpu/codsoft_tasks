@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Lock, Download, CheckCircle2, AlertTriangle, FileText, ArrowLeft } from 'lucide-react';
+import { Shield, Lock, Download, CheckCircle2, AlertTriangle, FileText, ArrowLeft, Terminal } from 'lucide-react';
 import { api } from '../services/api';
+import { Button } from './ui/Button';
+import { CryptoBadge, IntegrityBadge, RoleBadge } from './ui/Badges';
 
 interface SharedFileViewProps {
   token: string;
@@ -40,7 +42,7 @@ export const SharedFileView: React.FC<SharedFileViewProps> = ({ token, onReturnT
     try {
       const res = await api.downloadSharedFile(token, shareData.file.originalName);
       if (res.integrityVerified) {
-        setVerificationSuccess(`AUTHENTICATED & VERIFIED: SHA-256 checksum matched registered fingerprint.`);
+        setVerificationSuccess(`AUTHENTICATED & VERIFIED: Recalculated SHA-256 matches registered fingerprint.`);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Download & decryption failed');
@@ -50,100 +52,122 @@ export const SharedFileView: React.FC<SharedFileViewProps> = ({ token, onReturnT
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-transparent text-white">
-      <div className="w-full max-w-xl bg-[#08080a]/80 backdrop-blur-xl border border-white/20 p-6 sm:p-8 shadow-2xl relative space-y-6">
-        {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-white/70" />
-            <span className="font-mono-tech text-xs tracking-widest text-white uppercase font-bold">
-              SECURE SHARED REPOSITORY
-            </span>
+    <div className="w-full min-h-[calc(100vh-64px)] px-4 sm:px-8 lg:px-12 py-12 flex flex-col justify-center">
+      <div className="w-full max-w-[1720px] mx-auto grid grid-cols-1 lg:grid-cols-[48%_52%] items-center gap-8">
+        {/* Left: Atmospheric Negative Space */}
+        <div className="hidden lg:flex flex-col justify-between h-full min-h-[380px] pointer-events-none select-none pr-8">
+          <div>
+            <div className="font-mono-tech text-[10px] tracking-[0.22em] text-white/40 uppercase">
+              [ CRYPTOGRAPHIC LINK VERIFICATION ]
+            </div>
+            <div className="font-mono-tech text-[11px] text-white/25 mt-1">
+              TOKEN: {token.substring(0, 16)}...
+            </div>
           </div>
-          <button
-            onClick={onReturnToHome}
-            className="flex items-center gap-1 font-mono-tech text-xs text-white/60 hover:text-white"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>VAULT PORTAL</span>
-          </button>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="font-mono-tech text-[11px] tracking-[0.16em] text-white/80 uppercase">
+                ZERO PLAINTEXT EXPOSURE
+              </span>
+            </div>
+            <p className="font-mono-tech text-[11px] text-white/40 max-w-[340px] leading-relaxed">
+              Decryption is authenticated via AES-256-GCM hardware primitives only after link boundary validation passes.
+            </p>
+          </div>
         </div>
 
-        {loading ? (
-          <div className="py-12 text-center font-mono-tech text-xs text-white/50">
-            AUTHENTICATING ACCESS TOKEN & RETRIEVING OBJECT SPECIFICATION...
-          </div>
-        ) : errorMsg ? (
-          <div className="p-4 border border-red-500/40 bg-red-500/10 text-red-300 font-mono-tech text-xs space-y-2">
-            <div className="flex items-center gap-2 font-bold text-red-400">
-              <AlertTriangle className="w-4 h-4" />
-              ACCESS DENIED OR EXPIRED LINK
+        {/* Right: Shared File Access Surface */}
+        <div className="w-full max-w-[560px] lg:ml-auto p-6 sm:p-8 bg-black/40 backdrop-blur-md border border-white/14 rounded-[2px] shadow-2xl space-y-6 animate-hero-entrance">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-white/80" />
+              <span className="font-mono-tech text-xs tracking-widest text-white uppercase font-bold">
+                SECURE SHARED OBJECT
+              </span>
             </div>
-            <div>{errorMsg}</div>
-          </div>
-        ) : shareData ? (
-          <div className="space-y-5">
-            {verificationSuccess && (
-              <div className="p-3 border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 font-mono-tech text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{verificationSuccess}</span>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <div className="text-[10px] font-mono-tech text-white/40 uppercase">ENCRYPTED OBJECT</div>
-              <h2 className="text-xl font-mono-tech font-bold text-white break-words">
-                {shareData.file.originalName}
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 p-4 border border-white/15 bg-white/5 font-mono-tech text-xs">
-              <div>
-                <span className="text-white/40 text-[10px] uppercase block">OBJECT SIZE</span>
-                <span className="text-white font-medium">{(shareData.file.size / 1024).toFixed(1)} KB</span>
-              </div>
-              <div>
-                <span className="text-white/40 text-[10px] uppercase block">CIPHER</span>
-                <span className="text-white font-medium">AES-256-GCM</span>
-              </div>
-              <div>
-                <span className="text-white/40 text-[10px] uppercase block">GRANTED ROLE</span>
-                <span className="text-blue-400 font-medium">{shareData.role}</span>
-              </div>
-              <div>
-                <span className="text-white/40 text-[10px] uppercase block">SHARED BY</span>
-                <span className="text-white font-medium">{shareData.file.ownerName || 'Vault User'}</span>
-              </div>
-            </div>
-
-            {/* SHA-256 Hash Display */}
-            <div className="p-3.5 border border-white/15 bg-black/60 space-y-1 font-mono-tech">
-              <div className="text-[10px] text-white/40 uppercase">AUTHENTICATED SHA-256 FINGERPRINT:</div>
-              <div className="text-xs text-emerald-400 break-all p-2 bg-black border border-white/10">
-                {shareData.file.sha256Hash}
-              </div>
-            </div>
-
-            {/* Expiration Note */}
-            <div className="text-[11px] font-mono-tech text-white/50">
-              {shareData.expiresAt ? (
-                <span>Expires at: {new Date(shareData.expiresAt).toLocaleString()}</span>
-              ) : (
-                <span>Persistent link (subject to owner revocation)</span>
-              )}
-            </div>
-
-            {/* Download Button */}
             <button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="w-full py-3 bg-white text-black hover:bg-white/90 font-mono-tech font-bold text-xs tracking-widest uppercase transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              onClick={onReturnToHome}
+              className="flex items-center gap-1.5 font-mono-tech text-[11px] text-white/60 hover:text-white transition-colors"
             >
-              <Download className="w-4 h-4" />
-              <span>{downloading ? 'DECRYPTING & VERIFYING SHA-256...' : 'DECRYPT & DOWNLOAD OBJECT'}</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>RETURN HOME</span>
             </button>
           </div>
-        ) : null}
+
+          {loading ? (
+            <div className="py-12 text-center font-mono-tech text-xs text-white/40">
+              [ AUTHENTICATING ACCESS TOKEN &amp; RETRIEVING OBJECT SPECIFICATION... ]
+            </div>
+          ) : errorMsg ? (
+            <div className="p-4 border border-red-500/40 bg-red-500/10 text-red-300 font-mono-tech text-xs space-y-2 rounded-[2px]">
+              <div className="flex items-center gap-2 font-bold text-red-400">
+                <AlertTriangle className="w-4 h-4" />
+                <span>ACCESS DENIED OR EXPIRED LINK</span>
+              </div>
+              <p className="font-sans-main text-[11px] text-red-200/80">{errorMsg}</p>
+            </div>
+          ) : shareData?.file ? (
+            <div className="space-y-5">
+              <div className="space-y-1">
+                <div className="font-mono-tech text-[10px] text-white/40 uppercase tracking-wider">
+                  AUTHENTICATED FILE OBJECT
+                </div>
+                <h2 className="font-sans-main text-2xl font-normal text-white">
+                  {shareData.file.originalName}
+                </h2>
+                <div className="flex items-center gap-2 font-mono-tech text-[10.5px] text-white/50 pt-1">
+                  <span>{(shareData.file.size / 1024).toFixed(1)} KB</span>
+                  <span>•</span>
+                  <span>Owner: {shareData.file.ownerName || 'Encrypted Vault'}</span>
+                </div>
+              </div>
+
+              {/* Cryptographic Envelope Details */}
+              <div className="p-4 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-2 font-mono-tech text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/40">CIPHER:</span>
+                  <CryptoBadge label="AES-256-GCM" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/40">PERMITTED ROLE:</span>
+                  <RoleBadge role={shareData.role} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/40">EXPIRES:</span>
+                  <span className="text-white/70">
+                    {shareData.expiresAt ? new Date(shareData.expiresAt).toLocaleString() : 'Permanent'}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-white/10">
+                  <div className="text-[9.5px] text-white/40 uppercase">REGISTERED SHA-256</div>
+                  <div className="text-[10px] text-emerald-300 break-all font-mono mt-0.5">
+                    {shareData.file.sha256Hash}
+                  </div>
+                </div>
+              </div>
+
+              {verificationSuccess && (
+                <div className="p-3 bg-emerald-950/20 border border-emerald-500/35 rounded-[2px] font-mono-tech text-xs text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{verificationSuccess}</span>
+                </div>
+              )}
+
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
+                leftIcon={<Download className="w-4 h-4" />}
+                onClick={handleDownload}
+                isLoading={downloading}
+              >
+                {downloading ? 'DECRYPTING & VERIFYING...' : 'DECRYPT & DOWNLOAD SECURE FILE'}
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

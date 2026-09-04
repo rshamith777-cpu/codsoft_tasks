@@ -3,8 +3,6 @@ import {
   Shield,
   Lock,
   Upload,
-  Search,
-  Filter,
   Download,
   Share2,
   Trash2,
@@ -17,9 +15,20 @@ import {
   AlertTriangle,
   Play,
   RotateCcw,
+  Copy,
+  Check,
+  UserPlus,
+  Clock,
+  KeyRound,
+  X,
 } from 'lucide-react';
-import { VaultFile } from '../types';
+import { VaultFile, UserRole } from '../types';
 import { api } from '../services/api';
+import { Button } from './ui/Button';
+import { CryptoBadge, RoleBadge, IntegrityBadge } from './ui/Badges';
+import { SearchInput, Input, Select } from './ui/Input';
+import { Drawer } from './ui/Drawer';
+import { useToast } from './ui/Toast';
 
 interface VaultViewProps {
   files: VaultFile[];
@@ -45,29 +54,44 @@ export const VaultView: React.FC<VaultViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'OWNER' | 'SHARED'>('ALL');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [integrityToast, setIntegrityToast] = useState<{ id: string; verified: boolean; hash: string } | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [drawerFile, setDrawerFile] = useState<VaultFile | null>(null);
+  const [drawerTab, setDrawerTab] = useState<'overview' | 'permissions' | 'share'>('overview');
+  const [targetEmail, setTargetEmail] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('VIEWER');
+  const [shareExpiryHours, setShareExpiryHours] = useState(24);
+  const [copiedLinkToken, setCopiedLinkToken] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const getFileIcon = (mime: string, name: string) => {
-    if (mime.includes('pdf') || name.endsWith('.pdf')) {
+    if (mime?.includes('pdf') || name.endsWith('.pdf')) {
       return <FileText className="w-4 h-4 text-red-400 shrink-0" />;
     }
-    if (mime.includes('text') || name.endsWith('.env') || name.endsWith('.json') || name.endsWith('.ts')) {
+    if (
+      mime?.includes('text') ||
+      name.endsWith('.env') ||
+      name.endsWith('.json') ||
+      name.endsWith('.ts')
+    ) {
       return <FileCode className="w-4 h-4 text-emerald-400 shrink-0" />;
     }
-    if (mime.includes('zip') || mime.includes('tar') || mime.includes('rar')) {
+    if (mime?.includes('zip') || mime?.includes('tar') || mime?.includes('rar')) {
       return <FileArchive className="w-4 h-4 text-amber-400 shrink-0" />;
     }
     return <FileIcon className="w-4 h-4 text-white/70 shrink-0" />;
   };
 
-  const filteredFiles = files.filter((file) => {
-    const matchesSearch =
-      file.originalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.ownerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.sha256Hash.toLowerCase().includes(searchTerm.toLowerCase());
+  const safeFiles = files ?? [];
+  const safeEmail = (currentUserEmail || '').toLowerCase();
 
-    const isOwned = file.ownerEmail.toLowerCase() === currentUserEmail.toLowerCase();
+  const filteredFiles = safeFiles.filter((file) => {
+    if (!file) return false;
+    const origName = (file.originalName || '').toLowerCase();
+    const owner = (file.ownerEmail || '').toLowerCase();
+    const hash = (file.sha256Hash || '').toLowerCase();
+    const search = (searchTerm || '').toLowerCase();
+    const matchesSearch = origName.includes(search) || owner.includes(search) || hash.includes(search);
+
+    const isOwned = owner === safeEmail;
     if (roleFilter === 'OWNER') return matchesSearch && isOwned;
     if (roleFilter === 'SHARED') return matchesSearch && !isOwned;
     return matchesSearch;
@@ -78,300 +102,544 @@ export const VaultView: React.FC<VaultViewProps> = ({
     setDownloadingId(file.id);
     try {
       const res = await api.downloadFile(file.id, file.originalName);
-      setIntegrityToast({
-        id: file.id,
-        verified: res.integrityVerified,
-        hash: res.sha256,
+      showToast({
+        type: res.integrityVerified ? 'success' : 'warning',
+        title: res.integrityVerified ? 'INTEGRITY VERIFIED' : 'DOWNLOAD COMPLETED',
+        message: `SHA-256 fingerprint verified: ${file.originalName}`,
       });
-      setTimeout(() => setIntegrityToast(null), 5000);
+      onRefresh();
     } catch (err: any) {
-      alert(`Download failed: ${err.message}`);
+      showToast({
+        type: 'error',
+        title: 'DOWNLOAD FAILED',
+        message: err.message,
+      });
     } finally {
       setDownloadingId(null);
     }
   };
 
-  const handleQuickDelete = async (file: VaultFile, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm(`Permanently erase encrypted file "${file.originalName}"?`)) return;
+  const handleOpenDrawer = (file: VaultFile) => {
+    setDrawerFile(file);
+    setDrawerTab('overview');
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerFile(null);
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    if (!confirm('Are you sure you want to permanently erase this encrypted file from storage?')) {
+      return;
+    }
     try {
-      await api.deleteFile(file.id);
+      await api.deleteFile(fileId);
+      showToast({
+        type: 'warning',
+        title: 'FILE PURGED',
+        message: 'Encrypted object deleted from vault repository.',
+      });
+      handleCloseDrawer();
       onRefresh();
     } catch (err: any) {
-      alert(`Delete error: ${err.message}`);
+      showToast({
+        type: 'error',
+        title: 'DELETION FAILED',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleAddPermission = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!drawerFile || !targetEmail.trim()) return;
+
+    try {
+      await api.addPermission(drawerFile.id, targetEmail.trim(), selectedRole);
+      showToast({
+        type: 'success',
+        title: 'ACCESS GRANTED',
+        message: `${targetEmail} assigned role ${selectedRole}.`,
+      });
+      setTargetEmail('');
+      onRefresh();
+      // Update local drawer state
+      const updatedFiles = await api.getFiles();
+      const updated = updatedFiles.find((f) => f.id === drawerFile.id);
+      if (updated) setDrawerFile(updated);
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'PERMISSION ERROR',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleRevokePermission = async (permissionId: string) => {
+    if (!drawerFile) return;
+    try {
+      await api.revokePermission(permissionId);
+      showToast({
+        type: 'info',
+        title: 'PERMISSION REVOKED',
+        message: 'RBAC rule revoked from access matrix.',
+      });
+      onRefresh();
+      const updatedFiles = await api.getFiles();
+      const updated = updatedFiles.find((f) => f.id === drawerFile.id);
+      if (updated) setDrawerFile(updated);
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'REVOCATION FAILED',
+        message: err.message,
+      });
+    }
+  };
+
+  const handleCreateShareLink = async () => {
+    if (!drawerFile) return;
+    try {
+      const res = await api.createShareLink(drawerFile.id, 'VIEWER', shareExpiryHours);
+      const url = `${window.location.origin}/?share=${res.shareLink.token}`;
+      navigator.clipboard.writeText(url);
+      setCopiedLinkToken(res.shareLink.token);
+      showToast({
+        type: 'success',
+        title: 'SHARE LINK GENERATED',
+        message: 'Time-bound cryptographic link copied to clipboard.',
+      });
+      onRefresh();
+      const updatedFiles = await api.getFiles();
+      const updated = updatedFiles.find((f) => f.id === drawerFile.id);
+      if (updated) setDrawerFile(updated);
+      setTimeout(() => setCopiedLinkToken(null), 3000);
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        title: 'LINK GENERATION FAILED',
+        message: err.message,
+      });
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Top Banner for Demo State */}
-      {isDemoActive && (
-        <div className="p-3 border border-amber-500/40 bg-amber-500/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono-tech">
-          <div className="flex items-center gap-2 text-amber-300">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
-            <span>
-              <strong>DETERMINISTIC DEMO ENVIRONMENT ACTIVE</strong> — Seeded with sample encrypted payloads & verified audit logs.
-            </span>
+    <div className="w-full min-h-[calc(100vh-64px)] px-4 sm:px-8 lg:px-12 py-8 flex flex-col justify-start">
+      <div className="w-full max-w-[1720px] mx-auto space-y-6 animate-hero-entrance">
+        {/* Header and Quick Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
+          <div>
+            <div className="flex items-center gap-2 font-mono-tech text-[10px] tracking-[0.18em] text-white/50 uppercase">
+              <Lock className="w-3.5 h-3.5 text-white/70" />
+              <span>02 ENCRYPTED VAULT REPOSITORY</span>
+            </div>
+            <h1 className="font-sans-main text-2xl sm:text-3xl font-normal text-white tracking-tight mt-1">
+              Encrypted Objects
+            </h1>
           </div>
-          <button
-            id="btn-reset-demo-banner"
-            onClick={onResetDemo}
-            className="px-3 py-1.5 border border-amber-500/40 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 uppercase tracking-wider text-[11px] transition-colors shrink-0"
-          >
-            RESTORE PRISTINE VAULT
-          </button>
-        </div>
-      )}
 
-      {/* Integrity Verification Live Toast */}
-      {integrityToast && (
-        <div className="p-3.5 border border-emerald-500/40 bg-emerald-950/80 text-emerald-300 font-mono-tech text-xs flex items-center justify-between gap-3 shadow-lg">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>
-              <strong>INTEGRITY VERIFIED:</strong> AES-256-GCM decrypted and verified matching SHA-256: {integrityToast.hash.substring(0, 16)}...
-            </span>
-          </div>
-          <button
-            onClick={() => setIntegrityToast(null)}
-            className="text-emerald-400 hover:text-emerald-200 uppercase text-[10px]"
-          >
-            [ DISMISS ]
-          </button>
-        </div>
-      )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {!isDemoActive && files.length === 0 && (
+              <Button
+                variant="outline"
+                size="md"
+                leftIcon={<Play className="w-4 h-4" />}
+                onClick={onSeedDemo}
+              >
+                Load Security Demo
+              </Button>
+            )}
 
-      {/* Header & Primary Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-2 text-white/50 font-mono-tech text-[10px] tracking-widest uppercase">
-            <Shield className="w-3.5 h-3.5 text-white/60" />
-            SECURE VAULT REPOSITORY
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mt-1">
-            My Encrypted Vault
-          </h1>
-        </div>
+            {isDemoActive && (
+              <Button
+                variant="outline"
+                size="md"
+                leftIcon={<RotateCcw className="w-4 h-4 text-amber-400" />}
+                onClick={onResetDemo}
+              >
+                Reset Demo
+              </Button>
+            )}
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {!isDemoActive && files.length === 0 && (
-            <button
-              id="btn-seed-demo-quick"
-              onClick={onSeedDemo}
-              className="px-4 py-2.5 border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono-tech text-xs tracking-wider uppercase transition-colors flex items-center gap-1.5"
-            >
-              <Play className="w-3.5 h-3.5" />
-              <span>LOAD SECURITY DEMO</span>
-            </button>
-          )}
-
-          <button
-            id="btn-open-upload-modal"
-            onClick={onOpenFileUpload}
-            className="px-5 py-2.5 bg-white text-black hover:bg-white/90 font-mono-tech font-bold text-xs tracking-widest uppercase transition-colors flex items-center gap-2 shadow-sm"
-          >
-            <Upload className="w-4 h-4" />
-            <span>+ UPLOAD FILE</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div className="sm:col-span-8 relative">
-          <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            id="vault-search-input"
-            type="text"
-            placeholder="Search by file name, owner, or SHA-256 fingerprint..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-[#08080a]/75 backdrop-blur-md border border-white/15 text-white font-mono-tech text-xs focus:outline-none focus:border-white transition-colors"
-          />
-        </div>
-
-        <div className="sm:col-span-4 flex gap-1 border border-white/15 p-1 bg-[#08080a]/75 backdrop-blur-md">
-          <button
-            onClick={() => setRoleFilter('ALL')}
-            className={`flex-1 py-1.5 font-mono-tech text-[11px] uppercase tracking-wider transition-colors ${
-              roleFilter === 'ALL' ? 'bg-white text-black font-semibold' : 'text-white/60 hover:text-white'
-            }`}
-          >
-            ALL ({files.length})
-          </button>
-          <button
-            onClick={() => setRoleFilter('OWNER')}
-            className={`flex-1 py-1.5 font-mono-tech text-[11px] uppercase tracking-wider transition-colors ${
-              roleFilter === 'OWNER' ? 'bg-white text-black font-semibold' : 'text-white/60 hover:text-white'
-            }`}
-          >
-            OWNED
-          </button>
-          <button
-            onClick={() => setRoleFilter('SHARED')}
-            className={`flex-1 py-1.5 font-mono-tech text-[11px] uppercase tracking-wider transition-colors ${
-              roleFilter === 'SHARED' ? 'bg-white text-black font-semibold' : 'text-white/60 hover:text-white'
-            }`}
-          >
-            SHARED
-          </button>
-        </div>
-      </div>
-
-      {/* Main Technical Files Table */}
-      {files.length === 0 ? (
-        /* Empty State */
-        <div className="border border-white/15 bg-[#08080a]/75 backdrop-blur-md p-12 text-center space-y-4">
-          <div className="w-12 h-12 border border-white/20 bg-white/5 flex items-center justify-center mx-auto text-white/50">
-            <Lock className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-mono-tech text-sm font-semibold tracking-wider text-white uppercase">
-              NO FILES YET
-            </h3>
-            <p className="text-xs text-white/50 max-w-md mx-auto">
-              Upload your first file to create an encrypted secure vault. Files are encrypted with AES-256-GCM before storage.
-            </p>
-          </div>
-          <div className="pt-2 flex justify-center gap-3">
-            <button
+            <Button
+              id="btn-open-upload-modal"
+              variant="primary"
+              size="md"
+              leftIcon={<Upload className="w-4 h-4" />}
               onClick={onOpenFileUpload}
-              className="px-4 py-2 bg-white text-black font-mono-tech font-bold text-xs uppercase tracking-widest hover:bg-white/90"
             >
-              UPLOAD FIRST FILE
+              Upload &amp; Encrypt
+            </Button>
+          </div>
+        </div>
+
+        {/* Search & Filter Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
+          <div className="md:col-span-8">
+            <SearchInput
+              id="vault-search-input"
+              placeholder="Search by file name, owner, or SHA-256 fingerprint..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+            />
+          </div>
+
+          <div className="md:col-span-4 flex gap-1 p-1 glass-toolbar rounded-[3px]">
+            <button
+              type="button"
+              onClick={() => setRoleFilter('ALL')}
+              className={`flex-1 py-2 font-mono-tech text-xs uppercase tracking-wider transition-colors rounded-[2px] ${
+                roleFilter === 'ALL'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              ALL ({safeFiles.length})
             </button>
             <button
-              onClick={onSeedDemo}
-              className="px-4 py-2 border border-white/20 text-white font-mono-tech text-xs uppercase tracking-widest hover:bg-white/10"
+              type="button"
+              onClick={() => setRoleFilter('OWNER')}
+              className={`flex-1 py-2 font-mono-tech text-xs uppercase tracking-wider transition-colors rounded-[2px] ${
+                roleFilter === 'OWNER'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-white/60 hover:text-white'
+              }`}
             >
-              LOAD DEMO DATASET
+              OWNED
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter('SHARED')}
+              className={`flex-1 py-2 font-mono-tech text-xs uppercase tracking-wider transition-colors rounded-[2px] ${
+                roleFilter === 'SHARED'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-white/60 hover:text-white'
+              }`}
+            >
+              SHARED
             </button>
           </div>
         </div>
-      ) : filteredFiles.length === 0 ? (
-        <div className="border border-white/15 bg-[#08080a]/75 backdrop-blur-md p-8 text-center font-mono-tech text-xs text-white/50">
-          No encrypted files matched your search filter "{searchTerm}".
-        </div>
-      ) : (
-        <div className="border border-white/15 bg-[#08080a]/75 backdrop-blur-md overflow-x-auto">
-          <table className="w-full text-left border-collapse" id="vault-files-table">
-            <thead>
-              <tr className="border-b border-white/10 bg-white/[0.02] font-mono-tech text-[10px] text-white/40 tracking-widest uppercase">
-                <th className="py-3 px-4">OBJECT / FILE NAME</th>
-                <th className="py-3 px-4">SIZE</th>
-                <th className="py-3 px-4">CIPHER</th>
-                <th className="py-3 px-4">INTEGRITY</th>
-                <th className="py-3 px-4">OWNER</th>
-                <th className="py-3 px-4">YOUR ROLE</th>
-                <th className="py-3 px-4 text-right">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 font-mono-tech text-xs">
-              {filteredFiles.map((file) => {
-                const isOwned = file.ownerEmail.toLowerCase() === currentUserEmail.toLowerCase();
-                return (
-                  <tr
-                    key={file.id}
-                    onClick={() => onSelectFile(file)}
-                    className="hover:bg-white/[0.04] cursor-pointer transition-colors group"
-                  >
-                    {/* File Name */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2.5">
-                        {getFileIcon(file.mimeType, file.originalName)}
-                        <div>
-                          <div className="text-white font-medium group-hover:text-white/90">
-                            {file.originalName}
-                          </div>
-                          <div className="text-[10px] text-white/40 truncate max-w-[200px]">
-                            {file.id}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
 
-                    {/* Size */}
-                    <td className="py-3 px-4 text-white/70">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </td>
-
-                    {/* Encryption */}
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 border border-white/15 bg-white/5 text-white/90">
-                        <Lock className="w-2.5 h-2.5 text-white/60" />
-                        AES-256-GCM
-                      </span>
-                    </td>
-
-                    {/* Integrity */}
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
-                        SHA-256 VERIFIED
-                      </span>
-                    </td>
-
-                    {/* Owner */}
-                    <td className="py-3 px-4 text-white/70 truncate max-w-[140px]">
-                      {isOwned ? 'YOU' : file.ownerEmail}
-                    </td>
-
-                    {/* Role */}
-                    <td className="py-3 px-4">
-                      <span
-                        className={`text-[10px] px-2 py-0.5 border ${
-                          file.userRole === 'OWNER'
-                            ? 'border-white/30 text-white bg-white/5 font-semibold'
-                            : file.userRole === 'EDITOR'
-                            ? 'border-blue-500/30 text-blue-400 bg-blue-500/5'
-                            : 'border-white/15 text-white/70'
-                        }`}
-                      >
-                        {file.userRole || (isOwned ? 'OWNER' : 'VIEWER')}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          id={`btn-inspect-${file.id}`}
-                          onClick={() => onSelectFile(file)}
-                          className="p-1.5 border border-white/10 hover:border-white/30 bg-white/5 text-white/70 hover:text-white transition-colors"
-                          title="Inspect Cryptographic Metadata"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          id={`btn-download-${file.id}`}
-                          onClick={(e) => handleQuickDownload(file, e)}
-                          disabled={downloadingId === file.id}
-                          className="p-1.5 border border-white/10 hover:border-white/30 bg-white/5 text-white/70 hover:text-white transition-colors"
-                          title="Download & Verify Integrity"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </button>
-
-                        {isOwned && (
-                          <button
-                            id={`btn-delete-${file.id}`}
-                            onClick={(e) => handleQuickDelete(file, e)}
-                            className="p-1.5 border border-red-500/30 hover:border-red-500/50 bg-red-500/5 text-red-400 hover:text-red-300 transition-colors"
-                            title="Purge File"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+        {/* Dense Workstation File Table (Click opens right drawer) */}
+        <div className="glass-panel rounded-[3px] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left font-mono-tech text-xs sm:text-sm">
+              <thead className="bg-white/[0.04] border-b border-white/10 text-xs tracking-[0.16em] uppercase text-white/50 select-none">
+                <tr>
+                  <th className="py-3.5 px-5">OBJECT NAME</th>
+                  <th className="py-3.5 px-5">SIZE</th>
+                  <th className="py-3.5 px-5">CIPHER</th>
+                  <th className="py-3.5 px-5">INTEGRITY</th>
+                  <th className="py-3.5 px-5">ROLE</th>
+                  <th className="py-3.5 px-5">OWNER</th>
+                  <th className="py-3.5 px-5 text-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredFiles.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-14 text-center text-white/40 text-sm">
+                      [ ZERO ENCRYPTED OBJECTS FOUND ]
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : (
+                  filteredFiles.map((file) => {
+                    const isOwned =
+                      file.ownerEmail.toLowerCase() === currentUserEmail.toLowerCase();
+                    const isDownloading = downloadingId === file.id;
+
+                    return (
+                      <tr
+                        key={file.id}
+                        onClick={() => handleOpenDrawer(file)}
+                        className="hover:bg-white/[0.04] transition-colors cursor-pointer group"
+                      >
+                        <td className="py-3.5 px-5 flex items-center gap-3">
+                          {getFileIcon(file.mimeType, file.originalName)}
+                          <span className="font-sans-main text-sm text-white font-medium group-hover:text-white transition-colors truncate max-w-[320px]">
+                            {file.originalName}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-white/60 whitespace-nowrap">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </td>
+                        <td className="py-3.5 px-5 whitespace-nowrap">
+                          <CryptoBadge label="AES-256-GCM" />
+                        </td>
+                        <td className="py-3.5 px-5 whitespace-nowrap">
+                          <IntegrityBadge status="VERIFIED" />
+                        </td>
+                        <td className="py-3.5 px-5 whitespace-nowrap">
+                          <RoleBadge role={file.userRole || (isOwned ? 'OWNER' : 'VIEWER')} />
+                        </td>
+                        <td className="py-3.5 px-5 text-white/50 truncate max-w-[180px]">
+                          {file.ownerEmail}
+                        </td>
+                        <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                          <div
+                            className="inline-flex items-center gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => handleQuickDownload(file, e)}
+                              disabled={isDownloading}
+                              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-[2px] transition-colors border border-transparent hover:border-white/20"
+                              title="Download & Verify SHA-256"
+                            >
+                              {isDownloading ? (
+                                <span className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin block" />
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDrawer(file)}
+                              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-[2px] transition-colors border border-transparent hover:border-white/20"
+                              title="Inspect Object & Permissions"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Contextual Right-Side Inspector Drawer */}
+      <Drawer
+        isOpen={!!drawerFile}
+        onClose={handleCloseDrawer}
+        title={drawerFile?.originalName || 'Encrypted Object'}
+        eyebrow="CRYPTOGRAPHIC OBJECT INSPECTION"
+        subtitle={`Object ID: ${drawerFile?.id}`}
+        width="lg"
+      >
+        {drawerFile && (
+          <div className="space-y-6">
+            {/* Drawer Tab Switcher */}
+            <div className="flex border-b border-white/10 gap-1 pb-1">
+              <button
+                onClick={() => setDrawerTab('overview')}
+                className={`py-1.5 px-3 font-mono-tech text-[10.5px] uppercase tracking-wider rounded-[2px] ${
+                  drawerTab === 'overview'
+                    ? 'bg-white text-black font-semibold'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Envelope &amp; Digest
+              </button>
+              <button
+                onClick={() => setDrawerTab('permissions')}
+                className={`py-1.5 px-3 font-mono-tech text-[10.5px] uppercase tracking-wider rounded-[2px] ${
+                  drawerTab === 'permissions'
+                    ? 'bg-white text-black font-semibold'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Permissions ({drawerFile.permissions?.length || 0})
+              </button>
+              <button
+                onClick={() => setDrawerTab('share')}
+                className={`py-1.5 px-3 font-mono-tech text-[10.5px] uppercase tracking-wider rounded-[2px] ${
+                  drawerTab === 'share'
+                    ? 'bg-white text-black font-semibold'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Secure Links ({drawerFile.shareLinks?.length || 0})
+              </button>
+            </div>
+
+            {/* Tab 1: Overview & Cryptographic Envelope */}
+            {drawerTab === 'overview' && (
+              <div className="space-y-4 font-mono-tech text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-0.5">
+                    <div className="text-[9.5px] text-white/40 uppercase">ALGORITHM</div>
+                    <div className="font-bold text-white">AES-256-GCM</div>
+                  </div>
+                  <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-0.5">
+                    <div className="text-[9.5px] text-white/40 uppercase">ENCRYPTED SIZE</div>
+                    <div className="font-bold text-white">
+                      {(drawerFile.size / 1024).toFixed(1)} KB
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+                  <div className="text-[9.5px] text-white/40 uppercase">
+                    AUTHENTICATED SHA-256 DIGEST
+                  </div>
+                  <div className="text-[11px] text-emerald-300 break-all font-mono">
+                    {drawerFile.sha256Hash}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+                  <div className="text-[9.5px] text-white/40 uppercase">INITIALIZATION VECTOR (IV)</div>
+                  <div className="text-[11px] text-sky-300 break-all font-mono">
+                    {drawerFile.ivHex}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-1">
+                  <div className="text-[9.5px] text-white/40 uppercase">
+                    GCM 128-BIT AUTHENTICATION TAG
+                  </div>
+                  <div className="text-[11px] text-amber-300 break-all font-mono">
+                    {drawerFile.authTagHex}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center gap-3">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Download className="w-3.5 h-3.5" />}
+                    onClick={(e) => handleQuickDownload(drawerFile, e)}
+                  >
+                    Download &amp; Verify
+                  </Button>
+
+                  {(drawerFile.ownerEmail.toLowerCase() === currentUserEmail.toLowerCase() ||
+                    drawerFile.userRole === 'OWNER') && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                      onClick={() => handleDeleteFile(drawerFile.id)}
+                    >
+                      Delete Object
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: RBAC Permissions */}
+            {drawerTab === 'permissions' && (
+              <div className="space-y-4">
+                <form onSubmit={handleAddPermission} className="space-y-3 p-3.5 bg-white/[0.02] border border-white/10 rounded-[2px]">
+                  <div className="font-mono-tech text-[10px] text-white/50 uppercase tracking-wider">
+                    Grant Direct RBAC Access
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                    <div className="sm:col-span-8">
+                      <Input
+                        placeholder="user@organization.internal"
+                        value={targetEmail}
+                        onChange={(e) => setTargetEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="sm:col-span-4">
+                      <Select
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                        options={[
+                          { value: 'VIEWER', label: 'VIEWER' },
+                          { value: 'EDITOR', label: 'EDITOR' },
+                          { value: 'OWNER', label: 'OWNER' },
+                        ]}
+                      />
+                    </div>
+                  </div>
+                  <Button variant="secondary" size="sm" type="submit" leftIcon={<UserPlus className="w-3 h-3" />}>
+                    Add Permission Rule
+                  </Button>
+                </form>
+
+                <div className="divide-y divide-white/5 font-mono-tech text-xs">
+                  {drawerFile.permissions?.map((perm) => (
+                    <div key={perm.id} className="py-2.5 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-white font-medium">{perm.userEmail}</div>
+                        <div className="text-white/40 text-[10px]">
+                          Granted: {new Date(perm.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RoleBadge role={perm.role} />
+                        <button
+                          onClick={() => handleRevokePermission(perm.id)}
+                          className="text-white/40 hover:text-red-400 p-1"
+                          title="Revoke Permission"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3: Secure Share Links */}
+            {drawerTab === 'share' && (
+              <div className="space-y-4">
+                <div className="p-3.5 bg-white/[0.02] border border-white/10 rounded-[2px] space-y-3">
+                  <div className="font-mono-tech text-[10px] text-white/50 uppercase tracking-wider">
+                    Create Cryptographic Share Token
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <Select
+                        label="EXPIRATION BOUND"
+                        value={shareExpiryHours}
+                        onChange={(e) => setShareExpiryHours(Number(e.target.value))}
+                        options={[
+                          { value: '1', label: '1 Hour' },
+                          { value: '12', label: '12 Hours' },
+                          { value: '24', label: '24 Hours (Standard)' },
+                          { value: '72', label: '3 Days' },
+                          { value: '168', label: '7 Days' },
+                        ]}
+                      />
+                    </div>
+                    <div className="pt-5">
+                      <Button variant="primary" size="sm" leftIcon={<Share2 className="w-3 h-3" />} onClick={handleCreateShareLink}>
+                        Generate &amp; Copy Link
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-white/5 font-mono-tech text-xs">
+                  {drawerFile.shareLinks?.map((share) => (
+                    <div key={share.id} className="py-3 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/80 font-mono text-[11px]">
+                          Token: {share.token.substring(0, 12)}...
+                        </span>
+                        {share.revoked ? (
+                          <span className="text-red-400 text-[10px]">[REVOKED]</span>
+                        ) : (
+                          <span className="text-emerald-400 text-[10px]">[ACTIVE]</span>
+                        )}
+                      </div>
+                      <div className="text-white/40 text-[10px] flex items-center justify-between">
+                        <span>Access count: {share.accessCount}</span>
+                        <span>Expires: {share.expiresAt ? new Date(share.expiresAt).toLocaleString() : 'Never'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };
