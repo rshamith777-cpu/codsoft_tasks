@@ -1,0 +1,6 @@
+{
+  "name": "SecureVault",
+  "description": "Secure Encrypted File Sharing & Access Control Platform featuring AES-256-GCM authenticated encryption, SHA-256 integrity verification, role-based access control, and comprehensive security audit logging.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

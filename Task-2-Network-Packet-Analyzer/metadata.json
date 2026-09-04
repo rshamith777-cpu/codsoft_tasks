@@ -1,0 +1,6 @@
+{
+  "name": "Network Packet Analyzer",
+  "description": "Sovereign Network Packet Analyzer — Enterprise cyber security workstation for real-time packet capture, OSI dissection, MITRE threat detection, and forensic reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

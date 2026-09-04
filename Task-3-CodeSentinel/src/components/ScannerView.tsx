@@ -1,0 +1,559 @@
+import React, { useState, useRef } from 'react';
+import { 
+  Upload, 
+  FileCode, 
+  Terminal, 
+  Settings2, 
+  AlertCircle, 
+  FolderArchive,
+  ArrowRight,
+  Sparkles,
+  GitBranch
+} from 'lucide-react';
+import JSZip from 'jszip';
+import { ScanResult } from '../types.ts';
+
+interface ScannerViewProps {
+  onScanCompleted: (result: ScanResult) => void;
+  onLoadDemo: () => void;
+}
+
+export const ScannerView: React.FC<ScannerViewProps> = ({
+  onScanCompleted,
+  onLoadDemo
+}) => {
+  const [activeMode, setActiveMode] = useState<'ZIP' | 'FILES' | 'PASTE' | 'DEMO' | 'REPO'>('DEMO');
+  
+  // Paste Code State
+  const [pastedCode, setPastedCode] = useState(`import sqlite3
+import os
+
+def query_user(username):
+    conn = sqlite3.connect('app.db')
+    cursor = conn.cursor()
+    # SQL Injection flaw
+    cursor.execute(f"SELECT * FROM accounts WHERE user = '{username}'")
+    return cursor.fetchall()
+`);
+  const [pastedFilename, setPastedFilename] = useState('database_query.py');
+  const [pastedLang, setPastedLang] = useState('python');
+
+  // Multi-file / Zip state
+  const [stagedFiles, setStagedFiles] = useState<Array<{ path: string; content: string }>>([]);
+  const [projectName, setProjectName] = useState('Custom Source Assessment');
+  const [scanProfile, setScanProfile] = useState<'STANDARD' | 'DEEP' | 'STRICT'>('STANDARD');
+  const [excludedPaths, setExcludedPaths] = useState('node_modules, .git, dist, build');
+
+  // Loading & Scanning State
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStage, setScanStage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const zipInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Handle Multi-file selection
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setErrorMessage(null);
+
+    const files: File[] = Array.from(e.target.files);
+    const loadedFiles: Array<{ path: string; content: string }> = [];
+
+    for (const file of files) {
+      try {
+        const text = await file.text();
+        loadedFiles.push({
+          path: file.name,
+          content: text
+        });
+      } catch (err) {
+        console.error('Error reading file:', file.name, err);
+      }
+    }
+
+    setStagedFiles(loadedFiles);
+    setProjectName(files.length === 1 ? files[0].name : `Package (${files.length} files)`);
+  };
+
+  // Handle ZIP unpacking
+  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    setErrorMessage(null);
+    const file = e.target.files[0];
+    setProjectName(file.name.replace(/\.zip$/i, ''));
+
+    try {
+      setScanStage('Unpacking archive...');
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(file);
+      const extracted: Array<{ path: string; content: string }> = [];
+
+      for (const [relativePath, zipEntry] of Object.entries(zipContent.files)) {
+        if (!zipEntry.dir && !relativePath.includes('__MACOSX') && !relativePath.includes('.DS_Store')) {
+          try {
+            const content = await zipEntry.async('text');
+            extracted.push({
+              path: relativePath,
+              content
+            });
+          } catch (err) {
+            console.warn('Skipping binary file in zip:', relativePath);
+          }
+        }
+      }
+
+      if (extracted.length === 0) {
+        setErrorMessage('No text or source code files found in archive.');
+        return;
+      }
+
+      setStagedFiles(extracted);
+      setScanStage('');
+    } catch (err: any) {
+      console.error('Zip extraction error:', err);
+      setErrorMessage(`Failed to extract ZIP archive: ${err?.message || 'Invalid format'}`);
+    }
+  };
+
+  // Trigger Execution
+  const handleExecuteScan = async () => {
+    setErrorMessage(null);
+    let filesToScan: Array<{ path: string; content: string }> = [];
+    let isDemo = false;
+    let name = projectName;
+
+    if (activeMode === 'DEMO') {
+      onLoadDemo();
+      return;
+    } else if (activeMode === 'REPO') {
+      setErrorMessage('GitHub repository cloning is coming soon. Please upload a ZIP archive or single files for instant local AST assessment.');
+      return;
+    } else if (activeMode === 'PASTE') {
+      if (!pastedCode.trim()) {
+        setErrorMessage('Please provide source code to scan.');
+        return;
+      }
+      filesToScan = [{ path: pastedFilename || 'snippet.py', content: pastedCode }];
+      name = pastedFilename || 'Pasted Code Snippet';
+    } else {
+      if (stagedFiles.length === 0) {
+        setErrorMessage('Please upload files or an archive before scanning.');
+        return;
+      }
+      filesToScan = stagedFiles;
+    }
+
+    try {
+      setIsScanning(true);
+      setScanStage('ANALYZING SOURCE...');
+
+      const response = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: filesToScan,
+          projectName: name,
+          sourceType: activeMode === 'PASTE' ? 'PASTE' : activeMode === 'ZIP' ? 'ZIP' : 'UPLOAD',
+          isDemo,
+          scanProfile,
+          excludedPaths: excludedPaths.split(',').map(s => s.trim()).filter(Boolean)
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Scan request failed');
+      }
+
+      const result: ScanResult = await response.json();
+
+      setTimeout(() => {
+        setIsScanning(false);
+        setScanStage('');
+        onScanCompleted(result);
+      }, 400);
+
+    } catch (err: any) {
+      console.error('Scan failed:', err);
+      setIsScanning(false);
+      setScanStage('');
+      setErrorMessage(err?.message || 'An error occurred while executing the security scan.');
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Consistent Internal Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/10">
+        <div className="space-y-1">
+          <div className="text-xs font-mono tracking-wider text-[#9a9a9a] uppercase">02 / ASSESSMENT ENGINE</div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            SCAN <span className="font-serif-italic font-normal">SOURCE</span>
+          </h1>
+          <p className="text-sm text-[#9a9a9a]">
+            Submit source files, archives, or code snippets for AST security vulnerability assessment.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-6 text-xs font-mono">
+          <div className="text-right">
+            <div className="text-[#9a9a9a] text-[10px]">SCANNER STATE</div>
+            <div className="text-emerald-400 flex items-center justify-end gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>{isScanning ? 'SCANNING' : 'READY'}</span>
+            </div>
+          </div>
+          <div className="text-right hidden sm:block">
+            <div className="text-[#9a9a9a] text-[10px]">SCAN PROFILE</div>
+            <div className="text-white/90">{scanProfile}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[#9a9a9a] text-[10px]">ACTIVE RULES</div>
+            <div className="text-white/90">18 Signatures</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Input Mode Selector */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-b border-white/10 pb-4">
+        <button
+          onClick={() => { setActiveMode('DEMO'); setErrorMessage(null); }}
+          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+            activeMode === 'DEMO'
+              ? 'bg-white/10 border-white/30 text-white shadow-sm'
+              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Terminal className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-mono font-bold">BENCHMARK DEMO</span>
+          </div>
+          <p className="text-[11px] text-[#9a9a9a] leading-tight">
+            Vulnerable Bank microservice
+          </p>
+        </button>
+
+        <button
+          onClick={() => { setActiveMode('ZIP'); setErrorMessage(null); }}
+          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+            activeMode === 'ZIP'
+              ? 'bg-white/10 border-white/30 text-white shadow-sm'
+              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <FolderArchive className="w-4 h-4 text-blue-400" />
+            <span className="text-xs font-mono font-bold">UPLOAD PROJECT</span>
+          </div>
+          <p className="text-[11px] text-[#9a9a9a] leading-tight">
+            ZIP archive extraction
+          </p>
+        </button>
+
+        <button
+          onClick={() => { setActiveMode('FILES'); setErrorMessage(null); }}
+          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+            activeMode === 'FILES'
+              ? 'bg-white/10 border-white/30 text-white shadow-sm'
+              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Upload className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-mono font-bold">UPLOAD FILE</span>
+          </div>
+          <p className="text-[11px] text-[#9a9a9a] leading-tight">
+            Multi-file selection
+          </p>
+        </button>
+
+        <button
+          onClick={() => { setActiveMode('PASTE'); setErrorMessage(null); }}
+          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+            activeMode === 'PASTE'
+              ? 'bg-white/10 border-white/30 text-white shadow-sm'
+              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <FileCode className="w-4 h-4 text-purple-400" />
+            <span className="text-xs font-mono font-bold">PASTE CODE</span>
+          </div>
+          <p className="text-[11px] text-[#9a9a9a] leading-tight">
+            Direct snippet evaluation
+          </p>
+        </button>
+
+        <button
+          onClick={() => { setActiveMode('REPO'); setErrorMessage(null); }}
+          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+            activeMode === 'REPO'
+              ? 'bg-white/10 border-white/30 text-white shadow-sm'
+              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <GitBranch className="w-4 h-4 text-white/40" />
+            <span className="text-xs font-mono font-bold text-white/70">REPOSITORY</span>
+          </div>
+          <p className="text-[10px] text-amber-400/80 uppercase font-mono font-semibold">
+            COMING SOON
+          </p>
+        </button>
+      </div>
+
+      {/* Error display */}
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-3 text-rose-300 text-xs font-mono">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Input Panes */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Main (2 cols) */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* DEMO MODE */}
+          {activeMode === 'DEMO' && (
+            <div className="panel-surface p-6 space-y-4 border border-amber-500/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="text-xs font-mono font-bold text-amber-300">BENCHMARK DEMONSTRATION SUITE</span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/70">
+                  7 FILES • 5 LANGUAGES
+                </span>
+              </div>
+
+              <p className="text-xs text-[#9a9a9a] leading-relaxed">
+                Evaluates the authentic <span className="text-white font-medium">Apex Bank & API Microservice</span> codebase featuring reproducible security flaws across Python, TypeScript, Go, PHP, and Dockerfile.
+              </p>
+
+              <div className="p-3.5 rounded-lg bg-black/50 border border-white/10 space-y-2 text-xs font-mono">
+                <div className="text-[#9a9a9a] text-[11px]">BENCHMARK TARGETS:</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-white/80">
+                  <div><span className="text-amber-400">•</span> backend/auth.py (SQLi, Weak PBKDF2)</div>
+                  <div><span className="text-amber-400">•</span> backend/database.py (SQLi, Command Injection)</div>
+                  <div><span className="text-amber-400">•</span> backend/routes/payment.ts (Eval, SQLi)</div>
+                  <div><span className="text-amber-400">•</span> backend/crypto_helper.go (MD5, Insecure Rand)</div>
+                  <div><span className="text-amber-400">•</span> backend/file_handler.php (Path Trav, Unserialize)</div>
+                  <div><span className="text-amber-400">•</span> Dockerfile (Root execution)</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ZIP ARCHIVE */}
+          {activeMode === 'ZIP' && (
+            <div className="panel-surface p-6 space-y-4 text-center">
+              <input
+                ref={zipInputRef}
+                type="file"
+                accept=".zip"
+                onChange={handleZipUpload}
+                className="hidden"
+              />
+              <div 
+                onClick={() => zipInputRef.current?.click()}
+                className="border-2 border-dashed border-white/20 hover:border-white/40 rounded-xl p-8 cursor-pointer transition-all bg-white/5 hover:bg-white/8 flex flex-col items-center justify-center space-y-3"
+              >
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                  <FolderArchive className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Select or Drag & Drop Repository ZIP</div>
+                  <p className="text-xs text-[#9a9a9a] mt-1">Accepts .zip archives containing project source code</p>
+                </div>
+              </div>
+
+              {stagedFiles.length > 0 && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-300 flex items-center justify-between">
+                  <span>Extracted {stagedFiles.length} source files ready for assessment</span>
+                  <span className="text-white/60">{projectName}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MULTI FILES */}
+          {activeMode === 'FILES' && (
+            <div className="panel-surface p-6 space-y-4 text-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-white/20 hover:border-white/40 rounded-xl p-8 cursor-pointer transition-all bg-white/5 hover:bg-white/8 flex flex-col items-center justify-center space-y-3"
+              >
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Select Individual Source Files</div>
+                  <p className="text-xs text-[#9a9a9a] mt-1">.py, .ts, .js, .go, .java, .php, .sql, Dockerfile</p>
+                </div>
+              </div>
+
+              {stagedFiles.length > 0 && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-300 flex items-center justify-between">
+                  <span>{stagedFiles.length} files queued for assessment</span>
+                  <span className="text-white/60">{projectName}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PASTE CODE */}
+          {activeMode === 'PASTE' && (
+            <div className="panel-surface p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={pastedFilename}
+                    onChange={(e) => setPastedFilename(e.target.value)}
+                    placeholder="filename.py"
+                    className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/15 text-xs font-mono text-white placeholder:text-white/30 focus:outline-none focus:border-white/40"
+                  />
+                  <select
+                    value={pastedLang}
+                    onChange={(e) => setPastedLang(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white/40"
+                  >
+                    <option value="python">Python</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="go">Go</option>
+                    <option value="php">PHP</option>
+                    <option value="sql">SQL</option>
+                    <option value="dockerfile">Dockerfile</option>
+                  </select>
+                </div>
+
+                <span className="text-[11px] font-mono text-[#9a9a9a]">
+                  {pastedCode.split('\n').length} lines
+                </span>
+              </div>
+
+              <textarea
+                value={pastedCode}
+                onChange={(e) => setPastedCode(e.target.value)}
+                placeholder="Paste vulnerable or target source code here..."
+                rows={12}
+                className="w-full p-4 rounded-lg bg-black/70 border border-white/15 text-xs font-mono text-white/90 placeholder:text-white/20 focus:outline-none focus:border-white/40 resize-y"
+                spellCheck={false}
+              />
+            </div>
+          )}
+
+          {/* REPOSITORY */}
+          {activeMode === 'REPO' && (
+            <div className="panel-surface p-6 space-y-4">
+              <div className="flex items-center gap-2 text-xs font-mono text-amber-300">
+                <GitBranch className="w-4 h-4 text-amber-400" />
+                <span className="font-bold">GIT REPOSITORY CONNECTOR</span>
+              </div>
+              <p className="text-xs text-[#9a9a9a]">
+                Direct repository integration is currently scheduled for engine v2.5. To assess a Git repository today, please clone it locally and upload as a ZIP archive or directory package.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={() => setActiveMode('ZIP')}
+                  className="btn-liquid-primary px-4 py-2 rounded-lg text-xs font-mono font-medium"
+                >
+                  SWITCH TO ZIP UPLOAD
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Controls (1 col) */}
+        <div className="space-y-4">
+          <div className="panel-surface p-5 space-y-4">
+            <h3 className="text-xs font-mono font-semibold text-white/80 uppercase tracking-wider flex items-center gap-2">
+              <Settings2 className="w-4 h-4 text-white/60" />
+              SCANNER CONTROLS
+            </h3>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-mono text-[#9a9a9a] mb-1">PROJECT NAME</label>
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white/40"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-[#9a9a9a] mb-1">SCAN PROFILE</label>
+                <select
+                  value={scanProfile}
+                  onChange={(e) => setScanProfile(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white/40"
+                >
+                  <option value="STANDARD">Standard AST & Regex Engine</option>
+                  <option value="DEEP">Deep Full-Spectrum Analysis</option>
+                  <option value="STRICT">Strict Zero-Tolerance Policy</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-mono text-[#9a9a9a] mb-1">EXCLUDED PATHS</label>
+                <input
+                  type="text"
+                  value={excludedPaths}
+                  onChange={(e) => setExcludedPaths(e.target.value)}
+                  placeholder="node_modules, .git, tests"
+                  className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white/40"
+                />
+              </div>
+            </div>
+
+            {/* Scan Execution Button */}
+            <div className="pt-2">
+              <button
+                id="execute-scan-btn"
+                onClick={handleExecuteScan}
+                disabled={isScanning}
+                className="btn-liquid-primary w-full py-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isScanning ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <span>ANALYZING SOURCE...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-black" />
+                    <span>RUN SECURITY ASSESSMENT</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </div>
+
+            {isScanning && (
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-1 text-xs font-mono text-white/70">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-semibold text-white">{scanStage}</span>
+                </div>
+                <div className="text-[11px] text-[#9a9a9a]">Executing syntax tree validation on server</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

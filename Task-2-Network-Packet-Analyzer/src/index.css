@@ -1,0 +1,209 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg: #000000;
+    --surface: rgba(5, 7, 12, 0.62);
+    --surface-2: rgba(0, 0, 0, 0.48);
+
+    --white: #ffffff;
+    --text: #f4f4f2;
+    --muted: #8e8e8e;
+
+    --blue: #3B82F6;
+    --cyan: #06B6D4;
+    --green: #10B981;
+    --red: #EF4444;
+    --amber: #F59E0B;
+
+    --border: rgba(255, 255, 255, 0.10);
+
+    --font-display: 'Geist Pixel Circle', 'BubbledotICG-FinePos', 'Courier New', monospace;
+    --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-editorial: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  body {
+    font-family: var(--font-ui);
+    background-color: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Background Video Atmosphere - Full Workstation Living Theme */
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Typography Utility Classes */
+.font-display {
+  font-family: var(--font-display) !important;
+  letter-spacing: 0.02em;
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
+}
+
+.font-editorial {
+  font-family: var(--font-editorial);
+}
+
+/* Global Heading & Title Typography — Exact Homepage Display Font */
+h1, h2, h3, h4, h5, h6,
+.heading-display,
+.sovereign-heading {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+.sovereign-pill-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+}
+
+/* Legacy Typography Mappings for Existing Codebase Compatibility */
+.font-royal {
+  font-family: var(--font-ui);
+  letter-spacing: 0.02em;
+}
+
+.font-royal-decor {
+  font-family: var(--font-display);
+}
+
+.font-royal-serif {
+  font-family: var(--font-editorial);
+}
+
+.font-royal-sans {
+  font-family: var(--font-ui);
+}
+
+.font-royal-mono {
+  font-family: var(--font-mono);
+}
+
+.font-sans-calm {
+  font-family: var(--font-ui);
+}
+
+.font-mono-calm {
+  font-family: var(--font-mono);
+}
+
+/* Sovereign Workstation Translucent Panels & Glass Surfaces */
+.sovereign-panel {
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 18px;
+}
+
+.sovereign-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.50);
+}
+
+.sovereign-sidebar {
+  background: rgba(0, 0, 0, 0.40);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.sovereign-header {
+  background: rgba(0, 0, 0, 0.40);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+/* Backward compatibility aliases */
+.royal-card {
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 18px;
+}
+
+.calm-card {
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 18px;
+}
+
+/* Buttons matching Homepage Pill Treatment */
+.sovereign-btn-primary {
+  background: #ffffff;
+  color: #000000;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 999px;
+  transition: all 0.15s ease;
+}
+
+.sovereign-btn-primary:hover {
+  background: rgba(255, 255, 255, 0.90);
+  transform: translateY(-1px);
+}
+
+.sovereign-btn-dark {
+  background: rgba(40, 40, 42, 0.80);
+  color: #f4f4f2;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  border-radius: 999px;
+  transition: all 0.15s ease;
+}
+
+.sovereign-btn-dark:hover {
+  background: rgba(52, 52, 55, 0.95);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
