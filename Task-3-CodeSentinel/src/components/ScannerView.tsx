@@ -77,34 +77,79 @@ def query_user(username):
   };
 
   // Handle ZIP unpacking
+  // Handle ZIP unpacking with Zip Slip / Traversal Defense
   const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
     setErrorMessage(null);
     const file = e.target.files[0];
+
+    if (file.size > 25 * 1024 * 1024) {
+      setErrorMessage('Archive size exceeds 25MB maximum limit.');
+      return;
+    }
+
     setProjectName(file.name.replace(/\.zip$/i, ''));
 
     try {
-      setScanStage('Unpacking archive...');
+      setScanStage('Unpacking archive & validating security boundaries...');
       const zip = new JSZip();
       const zipContent = await zip.loadAsync(file);
       const extracted: Array<{ path: string; content: string }> = [];
 
-      for (const [relativePath, zipEntry] of Object.entries(zipContent.files)) {
-        if (!zipEntry.dir && !relativePath.includes('__MACOSX') && !relativePath.includes('.DS_Store')) {
+      let totalSize = 0;
+      const entries = Object.entries(zipContent.files);
+
+      if (entries.length > 500) {
+        setErrorMessage('Archive contains more than 500 files, exceeding security processing threshold.');
+        setScanStage('');
+        return;
+      }
+
+      for (const [relativePath, zipEntry] of entries) {
+        // Zip Slip Protection: strictly reject path traversal sequences
+        const normalized = relativePath.replace(/\\/g, '/');
+        if (
+          normalized.includes('..') || 
+          normalized.startsWith('/') || 
+          /^[a-zA-Z]:/.test(normalized) ||
+          /[\x00-\x1f\x7f]/.test(normalized)
+        ) {
+          console.warn('Zip Slip attempt prevented:', relativePath);
+          setErrorMessage(`Security Warning: Archive contains illegal path traversal entry "${relativePath}". Extraction aborted.`);
+          setScanStage('');
+          return;
+        }
+
+        if (!zipEntry.dir && !normalized.includes('__MACOSX') && !normalized.includes('.DS_Store')) {
           try {
             const content = await zipEntry.async('text');
+            const contentBytes = new Blob([content]).size;
+            
+            if (contentBytes > 2 * 1024 * 1024) {
+              console.warn('Skipping oversized file in archive:', relativePath);
+              continue;
+            }
+
+            totalSize += contentBytes;
+            if (totalSize > 25 * 1024 * 1024) {
+              setErrorMessage('Extracted source size exceeds 25MB limit.');
+              setScanStage('');
+              return;
+            }
+
             extracted.push({
-              path: relativePath,
+              path: normalized.replace(/^\/+/, ''),
               content
             });
           } catch (err) {
-            console.warn('Skipping binary file in zip:', relativePath);
+            console.warn('Skipping binary or unreadable file in zip:', relativePath);
           }
         }
       }
 
       if (extracted.length === 0) {
-        setErrorMessage('No text or source code files found in archive.');
+        setErrorMessage('No valid text or source code files found in archive.');
+        setScanStage('');
         return;
       }
 
@@ -113,6 +158,7 @@ def query_user(username):
     } catch (err: any) {
       console.error('Zip extraction error:', err);
       setErrorMessage(`Failed to extract ZIP archive: ${err?.message || 'Invalid format'}`);
+      setScanStage('');
     }
   };
 

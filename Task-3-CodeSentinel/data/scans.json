@@ -380,5 +380,51 @@
       "version": "v2.4.0-enterprise",
       "activeRules": 18
     }
+  },
+  {
+    "id": "SCN-TEST-002",
+    "projectName": "Test App Version 2",
+    "sourceType": "UPLOAD",
+    "isDemo": false,
+    "startedAt": "2026-09-04T19:18:21.160Z",
+    "completedAt": "2026-09-04T19:18:21.160Z",
+    "status": "COMPLETED",
+    "filesScanned": 2,
+    "linesScanned": 50,
+    "criticalCount": 0,
+    "highCount": 1,
+    "mediumCount": 0,
+    "lowCount": 0,
+    "infoCount": 0,
+    "securityScore": 88,
+    "languages": {
+      "python": 50
+    },
+    "findings": [
+      {
+        "id": "FND-002",
+        "scanId": "SCN-TEST-002",
+        "ruleId": "SEC-GEN-SECRET-01",
+        "title": "Hardcoded Cryptographic Key",
+        "severity": "HIGH",
+        "cwe": "CWE-798",
+        "file": "auth.py",
+        "line": 5,
+        "codeSnippet": "api_key = \"secret_token_1234567890123456\"",
+        "evidence": "api_key = \"secret_token_1234567890123456\"",
+        "description": "Hardcoded Secret",
+        "impact": "Credential leak",
+        "remediation": "Use env",
+        "scanner": "CodeSentinel Static Engine",
+        "confidence": "HIGH",
+        "createdAt": "2026-09-04T19:18:21.160Z"
+      }
+    ],
+    "files": [],
+    "scannerEngine": {
+      "name": "Engine",
+      "version": "2.4",
+      "activeRules": 18
+    }
   }
 ]

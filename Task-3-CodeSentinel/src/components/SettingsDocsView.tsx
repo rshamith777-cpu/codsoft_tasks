@@ -14,13 +14,47 @@ import {
 
 export const SettingsDocsView: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'SYSTEM' | 'SRS' | 'ARCHITECTURE' | 'SCORING'>('SYSTEM');
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [keySavedMessage, setKeySavedMessage] = useState<string | null>(null);
+  const [copilotStatus, setCopilotStatus] = useState<{ configured: boolean; modelHierarchy: string[] } | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/copilot/status')
+      .then(r => r.json())
+      .then(data => setCopilotStatus(data))
+      .catch(() => {});
+  }, []);
+
+  const handleSaveApiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!apiKeyInput.trim()) return;
+
+    try {
+      const res = await fetch('/api/copilot/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: apiKeyInput.trim() })
+      });
+      if (res.ok) {
+        setKeySavedMessage('API key updated securely on server session.');
+        setApiKeyInput('');
+        setCopilotStatus({ configured: true, modelHierarchy: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-3.7-flash'] });
+        setTimeout(() => setKeySavedMessage(null), 3000);
+      } else {
+        const err = await res.json();
+        setKeySavedMessage(`Failed: ${err.error || 'Invalid key'}`);
+      }
+    } catch {
+      setKeySavedMessage('Server connection error.');
+    }
+  };
 
   return (
     <div className="space-y-8">
       {/* Consistent Internal Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/10">
         <div className="space-y-1">
-          <div className="text-xs font-mono tracking-wider text-[#9a9a9a] uppercase">08 / SYSTEM SPECIFICATION</div>
+          <div className="text-xs font-mono tracking-wider text-[#9a9a9a] uppercase">05 / SYSTEM SPECIFICATION</div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
             SYSTEM & <span className="font-serif-italic font-normal">DOCUMENTATION</span>
           </h1>
@@ -110,11 +144,60 @@ export const SettingsDocsView: React.FC = () => {
             <div className="panel-surface p-5 space-y-2 border border-white/10">
               <div className="text-[11px] font-mono text-[#9a9a9a] uppercase">AI COPILOT ENGINE</div>
               <div className="text-base font-bold font-mono text-white flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-400" />
-                Gemini 3.7 Flash
+                <span className={`w-2.5 h-2.5 rounded-full ${copilotStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                {copilotStatus?.configured ? 'Gemini Engine Active' : 'Deterministic Advisory Engine'}
               </div>
-              <p className="text-xs text-[#9a9a9a]">Server-side assisted exploit mechanics & automated patch generation.</p>
+              <p className="text-xs text-[#9a9a9a]">
+                {copilotStatus?.configured 
+                  ? 'Server-side assisted exploit mechanics & automated patch generation.' 
+                  : 'Operating in deterministic offline advisory mode. Connect API key to enable interactive Gemini dialogues.'}
+              </p>
             </div>
+          </div>
+
+          {/* Copilot Server API Configuration Box */}
+          <div className="panel-surface p-6 border border-white/10 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-mono font-semibold text-white uppercase tracking-wider">
+                  SECURITY COPILOT SERVER CONFIGURATION
+                </h3>
+                <p className="text-xs text-[#9a9a9a] mt-0.5">
+                  Keys are stored strictly in-memory on the backend server and are never exposed to browser bundles or network responses.
+                </p>
+              </div>
+
+              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold self-start sm:self-auto ${
+                copilotStatus?.configured 
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              }`}>
+                {copilotStatus?.configured ? 'KEY CONFIGURED' : 'NO KEY (DETERMINISTIC FALLBACK)'}
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveApiKey} className="flex flex-col sm:flex-row items-center gap-3">
+              <input
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder={copilotStatus?.configured ? '•••••••••••••••••••••••••••••••• (Active)' : 'Enter Gemini API Key (e.g. AIzaSy...)'}
+                className="w-full sm:flex-1 px-3.5 py-2 rounded-lg bg-black/50 border border-white/15 text-xs font-mono text-white placeholder:text-white/30 focus:border-[#85D743] outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!apiKeyInput.trim()}
+                className="w-full sm:w-auto btn-liquid-primary px-5 py-2 rounded-lg text-xs font-mono font-semibold cursor-pointer disabled:opacity-40"
+              >
+                APPLY KEY TO SESSION
+              </button>
+            </form>
+
+            {keySavedMessage && (
+              <div className="text-xs font-mono text-emerald-400">
+                {keySavedMessage}
+              </div>
+            )}
           </div>
 
           <div className="panel-surface p-6 space-y-4">

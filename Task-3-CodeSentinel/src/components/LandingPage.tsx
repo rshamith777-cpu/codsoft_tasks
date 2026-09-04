@@ -81,8 +81,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
 
   // Scroll Progress State
   const [scrollProgress, setScrollProgress] = useState<number>(0);
-  const [v1Opacity, setV1Opacity] = useState<number>(1);
-  const [v2Opacity, setV2Opacity] = useState<number>(0);
 
   // Top First Section Awareness (Stickers ONLY active here!)
   const [inTopSection, setInTopSection] = useState<boolean>(true);
@@ -100,7 +98,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
 
-  // 1. Initialize HLS on both video streams
+  // 1. Initialize HLS on both video streams with Maximum Sharpness & Buffer Optimization
   useEffect(() => {
     const v1 = video1Ref.current;
     const v2 = video2Ref.current;
@@ -111,13 +109,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
 
     const setupHls = (video: HTMLVideoElement, url: string, isV1: boolean) => {
       if (Hls.isSupported()) {
-        const hls = new Hls({ maxBufferLength: 60 });
+        const hls = new Hls({
+          maxBufferLength: 120,
+          maxMaxBufferLength: 600,
+          maxBufferSize: 120 * 1024 * 1024,
+          backBufferLength: 120, // Prevents discarding downloaded segments when scrolling backwards
+          enableWorker: true,
+          lowLatencyMode: false,
+          capLevelToPlayerSize: false, // Do not downscale for viewport size; force maximum sharpness
+          startLevel: -1,
+          fragLoadingMaxRetry: 6,
+          levelLoadingMaxRetry: 6,
+        });
+
         hls.loadSource(url);
         hls.attachMedia(video);
+
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          // Warm decoder immediately then pause
+          // Lock to the highest available quality level for sharpest rendering
+          if (hls.levels && hls.levels.length > 0) {
+            let maxIdx = 0;
+            let maxHeight = 0;
+            let maxBitrate = 0;
+            hls.levels.forEach((lvl, idx) => {
+              const h = lvl.height || 0;
+              const b = lvl.bitrate || 0;
+              if (h > maxHeight || (h === maxHeight && b > maxBitrate)) {
+                maxHeight = h;
+                maxBitrate = b;
+                maxIdx = idx;
+              }
+            });
+            hls.currentLevel = maxIdx;
+            hls.loadLevel = maxIdx;
+          }
+          // Warm hardware decoder immediately then pause
           video.play().then(() => video.pause()).catch(() => {});
         });
+
+        hls.on(Hls.Events.LEVEL_LOADED, () => {
+          if (hls.currentLevel !== -1 && hls.levels.length > 0) {
+            const topLevel = hls.levels.length - 1;
+            if (hls.currentLevel < topLevel) {
+              hls.currentLevel = topLevel;
+            }
+          }
+        });
+
         if (isV1) hls1 = hls;
         else hls2 = hls;
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -153,7 +191,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
     };
   }, []);
 
-  // 2. Continuous RequestAnimationFrame Scroll-Scrub Loop
+  // 2. High-Performance Continuous Scroll-Scrub Loop (Hardware GPU Interpolated)
   useEffect(() => {
     let animId: number;
 
@@ -163,16 +201,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
       const rawProgress = Math.min(1, Math.max(0, scrollY / maxScroll));
 
       // Avoid unnecessary re-renders via threshold check
-      setScrollProgress(prev => (Math.abs(prev - rawProgress) > 0.0005 ? rawProgress : prev));
+      setScrollProgress(prev => (Math.abs(prev - rawProgress) > 0.0008 ? rawProgress : prev));
 
       // Top First Section check (threshold: 0.08 of full scroll)
-      // When scroll down starts, strictly disable images and clear existing ones
       const isTop = rawProgress < 0.08;
       if (inTopSectionRef.current !== isTop) {
         inTopSectionRef.current = isTop;
         setInTopSection(isTop);
         if (!isTop) {
-          // Clear any active stickers as scroll effect begins
           setStickers([]);
         }
       }
@@ -186,12 +222,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
         const target1 = p1 * v1DurationRef.current;
 
         if (scrollY <= 10) {
-          v1.currentTime = 0;
+          if (v1.currentTime !== 0) v1.currentTime = 0;
           currTime1Ref.current = 0;
-        } else if (!v1.seeking) {
-          currTime1Ref.current += (target1 - currTime1Ref.current) * 0.3;
-          if (Math.abs(v1.currentTime - currTime1Ref.current) > 0.03) {
-            v1.currentTime = currTime1Ref.current;
+        } else {
+          // Smooth continuous exponential lerp (0.16 is responsive & buttery fluid)
+          currTime1Ref.current += (target1 - currTime1Ref.current) * 0.16;
+          const diff1 = Math.abs(v1.currentTime - currTime1Ref.current);
+          if (diff1 > 0.012 && !v1.seeking) {
+            if ('fastSeek' in v1 && typeof (v1 as any).fastSeek === 'function') {
+              (v1 as any).fastSeek(currTime1Ref.current);
+            } else {
+              v1.currentTime = currTime1Ref.current;
+            }
           }
         }
       }
@@ -202,33 +244,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
         const target2 = p2 * v2DurationRef.current;
 
         if (rawProgress >= 0.999) {
-          v2.currentTime = v2DurationRef.current;
+          if (v2.currentTime !== v2DurationRef.current) v2.currentTime = v2DurationRef.current;
           currTime2Ref.current = v2DurationRef.current;
-        } else if (!v2.seeking) {
-          currTime2Ref.current += (target2 - currTime2Ref.current) * 0.3;
-          if (Math.abs(v2.currentTime - currTime2Ref.current) > 0.03) {
-            v2.currentTime = currTime2Ref.current;
+        } else {
+          // Smooth continuous exponential lerp
+          currTime2Ref.current += (target2 - currTime2Ref.current) * 0.16;
+          const diff2 = Math.abs(v2.currentTime - currTime2Ref.current);
+          if (diff2 > 0.012 && !v2.seeking) {
+            if ('fastSeek' in v2 && typeof (v2 as any).fastSeek === 'function') {
+              (v2 as any).fastSeek(currTime2Ref.current);
+            } else {
+              v2.currentTime = currTime2Ref.current;
+            }
           }
         }
       }
 
-      // Crossfade logic (no dim)
+      // Smooth Hermite smoothstep crossfade between 0.44 and 0.52
       let op1 = 1;
       let op2 = 0;
 
-      if (rawProgress < 0.45) {
+      if (rawProgress < 0.44) {
         op1 = 1;
         op2 = 0;
-      } else if (rawProgress <= 0.5) {
-        op1 = 1;
-        op2 = (rawProgress - 0.45) / 0.05;
-      } else {
+      } else if (rawProgress > 0.52) {
         op1 = 0;
         op2 = 1;
+      } else {
+        const t = (rawProgress - 0.44) / 0.08;
+        const smoothT = t * t * (3 - 2 * t);
+        op1 = 1 - smoothT;
+        op2 = smoothT;
       }
 
-      setV1Opacity(prev => (Math.abs(prev - op1) > 0.01 ? op1 : prev));
-      setV2Opacity(prev => (Math.abs(prev - op2) > 0.01 ? op2 : prev));
+      // Direct GPU opacity assignment to prevent 60fps component re-render thrashing
+      if (v1 && v1.style.opacity !== op1.toFixed(3)) {
+        v1.style.opacity = op1.toFixed(3);
+      }
+      if (v2 && v2.style.opacity !== op2.toFixed(3)) {
+        v2.style.opacity = op2.toFixed(3);
+      }
 
       animId = requestAnimationFrame(tick);
     };
@@ -384,8 +439,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
           autoPlay={false}
           preload="auto"
           crossOrigin="anonymous"
-          style={{ opacity: v1Opacity }}
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300"
+          style={{ opacity: 1 }}
+          className="video-sharp-smooth absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
         <video
           ref={video2Ref}
@@ -394,11 +449,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onLoadDemo
           autoPlay={false}
           preload="auto"
           crossOrigin="anonymous"
-          style={{ opacity: v2Opacity }}
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300"
+          style={{ opacity: 0 }}
+          className="video-sharp-smooth absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
-        {/* Subtle dark cyber tint */}
-        <div className="absolute inset-0 bg-slate-950/30 pointer-events-none" />
+        {/* Sleek cinematic vignette & depth enhancement - keeps center sharp & vibrant */}
+        <div 
+          className="absolute inset-0 pointer-events-none" 
+          style={{
+            background: 'radial-gradient(circle at 50% 50%, rgba(2, 6, 23, 0.12) 0%, rgba(2, 6, 23, 0.35) 65%, rgba(2, 6, 23, 0.75) 100%)'
+          }}
+        />
+
+        {/* Micro-sharp cyber scanline texture */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, #000 0px, #000 1px, transparent 1px, transparent 3px)'
+          }}
+        />
 
         {/* Cyber Security HUD Overlay on Video */}
         <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 sm:p-10 opacity-60">

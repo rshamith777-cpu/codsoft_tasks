@@ -1,0 +1,84 @@
+[
+  {
+    "id": "AUD-MTNC70GX-1HBF",
+    "timestamp": "2026-09-04T19:18:22.497Z",
+    "eventType": "SCAN_DELETED",
+    "description": "Assessment scan record SCN-TEST-001 (\"Test App Version 1\") was permanently deleted.",
+    "severity": "WARNING",
+    "metadata": {
+      "scanId": "SCN-TEST-001",
+      "projectName": "Test App Version 1"
+    }
+  },
+  {
+    "id": "AUD-MTNC70GD-NL5H",
+    "timestamp": "2026-09-04T19:18:22.477Z",
+    "eventType": "SCAN_COMPLETED",
+    "description": "Assessment \"Test App Version 2\" (SCN-TEST-002) completed with 1 findings.",
+    "severity": "WARNING",
+    "metadata": {
+      "scanId": "SCN-TEST-002",
+      "projectName": "Test App Version 2",
+      "findingsCount": 1,
+      "securityScore": 88,
+      "critical": 0,
+      "high": 1
+    }
+  },
+  {
+    "id": "AUD-MTNC700S-3OAJ",
+    "timestamp": "2026-09-04T19:18:21.918Z",
+    "eventType": "SCAN_COMPLETED",
+    "description": "Assessment \"Test App Version 1\" (SCN-TEST-001) completed with 1 findings.",
+    "severity": "CRITICAL",
+    "metadata": {
+      "scanId": "SCN-TEST-001",
+      "projectName": "Test App Version 1",
+      "findingsCount": 1,
+      "securityScore": 75,
+      "critical": 1,
+      "high": 0
+    }
+  },
+  {
+    "id": "AUD-MTNC4OM0-K3ND",
+    "timestamp": "2026-09-04T19:16:33.816Z",
+    "eventType": "SCAN_DELETED",
+    "description": "Assessment scan record SCN-TEST-001 (\"Test App Version 1\") was permanently deleted.",
+    "severity": "WARNING",
+    "metadata": {
+      "scanId": "SCN-TEST-001",
+      "projectName": "Test App Version 1"
+    }
+  },
+  {
+    "id": "AUD-MTNC4OLF-7HF1",
+    "timestamp": "2026-09-04T19:16:33.795Z",
+    "eventType": "SCAN_COMPLETED",
+    "description": "Assessment \"Test App Version 2\" (SCN-TEST-002) completed with 1 findings.",
+    "severity": "WARNING",
+    "metadata": {
+      "scanId": "SCN-TEST-002",
+      "projectName": "Test App Version 2",
+      "findingsCount": 1,
+      "securityScore": 88,
+      "critical": 0,
+      "high": 1
+    }
+  },
+  {
+    "id": "AUD-MTNC4OI6-BFVM",
+    "timestamp": "2026-09-04T19:16:33.678Z",
+    "eventType": "SCAN_COMPLETED",
+    "description": "Assessment \"Test App Version 1\" (SCN-TEST-001) completed with 1 findings.",
+    "severity": "CRITICAL",
+    "metadata": {
+      "scanId": "SCN-TEST-001",
+      "projectName": "Test App Version 1",
+      "findingsCount": 1,
+      "securityScore": 75,
+      "critical": 1,
+      "high": 0
+    }
+  }
+]

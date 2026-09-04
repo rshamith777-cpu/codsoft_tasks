@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Sparkles, 
   X, 
@@ -6,7 +6,14 @@ import {
   Check, 
   Copy, 
   Bot, 
-  User
+  User,
+  StopCircle,
+  RotateCcw,
+  Trash2,
+  AlertCircle,
+  HelpCircle,
+  ShieldAlert,
+  Code2
 } from 'lucide-react';
 import { Finding, AIAnalysisResponse } from '../types.ts';
 
@@ -26,7 +33,27 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string; patch?: string }>>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [copiedPatch, setCopiedPatch] = useState(false);
+  const [copiedPatchIdx, setCopiedPatchIdx] = useState<number | null>(null);
+  const [isAiConfigured, setIsAiConfigured] = useState<boolean>(true);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Check Copilot status
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/copilot/status')
+        .then(r => r.json())
+        .then(data => {
+          setIsAiConfigured(!!data.configured);
+        })
+        .catch(() => setIsAiConfigured(false));
+    }
+  }, [isOpen]);
+
+  // Scroll to bottom on new message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   // If opened with an initial finding, auto-analyze
   useEffect(() => {
@@ -34,7 +61,7 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
       setMessages([
         {
           role: 'assistant',
-          text: `Analyzing ${initialFinding.title} (${initialFinding.cwe}) in \`${initialFinding.file}:${initialFinding.line}\`...\n\nEvidence: \`${initialFinding.evidence}\``
+          text: `Analyzing **${initialFinding.title}** (${initialFinding.cwe}) detected in \`${initialFinding.file}:${initialFinding.line}\`...\n\nEvidence: \`${initialFinding.evidence}\``
         }
       ]);
       analyzeFinding(initialFinding);
@@ -42,7 +69,7 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
       setMessages([
         {
           role: 'assistant',
-          text: `Hello! I am your CodeSentinel Security Copilot powered by Gemini. You can ask me how to remediate specific vulnerabilities, request secure architectural patterns, or discuss potential attack vectors for "${projectName || 'your codebase'}".`
+          text: `Hello! I am your CodeSentinel Security Copilot. I analyze security findings, explain exploit mechanics, evaluate attack surface vectors, and generate verified remediation patches for "${projectName || 'your codebase'}".`
         }
       ]);
     }
@@ -50,10 +77,14 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
 
   const analyzeFinding = async (finding: Finding) => {
     setIsLoading(true);
+    const controller = new AbortController();
+    setAbortController(controller);
+
     try {
       const res = await fetch('/api/ai/analyze-finding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           finding,
           codeContext: finding.codeSnippet || finding.evidence
@@ -61,11 +92,20 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
       });
 
       if (!res.ok) {
-        throw new Error('Analysis failed');
+        throw new Error('Analysis request failed');
       }
 
       const data: AIAnalysisResponse = await res.json();
-      const textResponse = `### Technical Assessment: ${finding.title}\n\n**Exploit Mechanics:**\n${data.exploitMechanics}\n\n**Attack Vector:**\n${data.attackVector}\n\n**Potential Impact:**\n${data.potentialImpact}\n\n**Remediation Guidance:**\n${data.remediationGuidance}\n\n**Mitigation Priority:** ${data.mitigationPriority}`;
+      const textResponse = `### ANALYSIS
+${data.exploitMechanics}
+
+### EVIDENCE & ATTACK VECTOR
+- **Entrypoint / Vector:** ${data.attackVector}
+- **Potential Impact:** ${data.potentialImpact}
+- **Mitigation Priority:** ${data.mitigationPriority}
+
+### RECOMMENDATION
+${data.remediationGuidance}`;
 
       setMessages(prev => [
         ...prev,
@@ -76,31 +116,45 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
         }
       ]);
     } catch (err: any) {
+      if (err.name === 'AbortError') return;
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          text: `Static Fallback Analysis:\n\n**Vulnerability:** ${finding.title} (${finding.cwe})\n**File:** ${finding.file}:${finding.line}\n**Evidence:** ${finding.evidence}\n\n**Remediation:** ${finding.remediation}`,
+          text: `### ANALYSIS
+Vulnerability: ${finding.title} (${finding.cwe}) in \`${finding.file}:${finding.line}\`.
+
+### EVIDENCE & ATTACK VECTOR
+Evidence: \`${finding.evidence}\`
+Impact: ${finding.impact}
+
+### RECOMMENDATION
+${finding.remediation}`,
           patch: finding.fixSnippet || finding.evidence
         }
       ]);
     } finally {
       setIsLoading(false);
+      setAbortController(null);
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || isLoading) return;
+  const executePrompt = async (promptText: string) => {
+    if (!promptText.trim() || isLoading) return;
 
-    const userMsg = inputText.trim();
+    const userMsg = promptText.trim();
     setInputText('');
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setIsLoading(true);
+
+    const controller = new AbortController();
+    setAbortController(controller);
 
     try {
       const res = await fetch('/api/ai/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           question: userMsg,
           contextFinding: initialFinding || undefined
@@ -116,91 +170,156 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
         }
       ]);
     } catch (err: any) {
+      if (err.name === 'AbortError') return;
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          text: `Unable to reach Copilot engine: ${err?.message || 'Network communication error'}`
+          text: `Security Copilot communication error: ${err?.message || 'Unable to contact analysis server.'}`
         }
       ]);
     } finally {
       setIsLoading(false);
+      setAbortController(null);
     }
   };
 
-  const handleCopyPatch = (patch: string) => {
-    navigator.clipboard.writeText(patch);
-    setCopiedPatch(true);
-    setTimeout(() => setCopiedPatch(false), 2000);
+  const handleStop = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setIsLoading(false);
+    }
+  };
+
+  const handleClear = () => {
+    setMessages([
+      {
+        role: 'assistant',
+        text: 'Conversation history cleared. How can I assist with your code assessment?'
+      }
+    ]);
+  };
+
+  const handleCopyText = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPatchIdx(idx);
+    setTimeout(() => setCopiedPatchIdx(null), 2000);
   };
 
   if (!isOpen) return null;
 
+  const quickActions = initialFinding ? [
+    { label: 'Why Is This Dangerous?', prompt: `Why is this finding (${initialFinding.title}, ${initialFinding.cwe}) dangerous? Explain the real-world attack scenario.` },
+    { label: 'Show Secure Fix', prompt: `Provide the minimal, drop-in replacement secure code fix for this ${initialFinding.title} in ${initialFinding.file}.` },
+    { label: 'Explain CWE', prompt: `Explain the ${initialFinding.cwe} classification and how it is typically prevented in software development.` },
+    { label: 'Review Remediation', prompt: `Review the recommended remediation for ${initialFinding.title} and identify any edge cases or potential bypasses.` }
+  ] : [
+    { label: 'Prioritize Findings', prompt: 'Which severity categories should our AppSec team remediate first, and what is the recommended triage workflow?' },
+    { label: 'Summarize Scan', prompt: 'Provide an executive summary of best practices for static application security testing.' },
+    { label: 'Secure Coding Rules', prompt: 'What are the top 5 most critical secure coding habits developers should adopt to prevent injection and authentication flaws?' }
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-2xl bg-[#09090b] border border-white/20 rounded-2xl shadow-2xl flex flex-col h-[640px] max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none font-mono">
+      <div className="w-full max-w-2xl bg-[#09090b] border border-white/20 rounded-2xl shadow-2xl flex flex-col h-[650px] max-h-[92vh] overflow-hidden">
         {/* Modal Header */}
         <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-blue-400" />
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-xs font-mono font-bold text-white flex items-center gap-2">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2">
                 SECURITY COPILOT
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">
-                  GEMINI 3.7 FLASH
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                  isAiConfigured 
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                    : 'bg-white/10 text-white/60'
+                }`}>
+                  {isAiConfigured ? 'GEMINI ACTIVE' : 'DETERMINISTIC ENGINE'}
                 </span>
               </h3>
-              <p className="text-[11px] text-[#9a9a9a] font-mono truncate max-w-md">
-                {initialFinding ? `${initialFinding.title} (${initialFinding.cwe})` : 'Application Security Assistant'}
+              <p className="text-[11px] text-[#9a9a9a] truncate max-w-md">
+                {initialFinding ? `${initialFinding.title} (${initialFinding.cwe})` : 'Application Security Advisory Assistant'}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleClear}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors cursor-pointer"
+              title="Clear Conversation"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Chat Messages */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 font-sans text-xs">
+        {/* Quick Action Chips */}
+        <div className="p-2.5 border-b border-white/5 bg-black/40 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+          <span className="text-white/40 text-[10px] uppercase mr-1">QUICK ACTIONS:</span>
+          {quickActions.map((qa, i) => (
+            <button
+              key={i}
+              onClick={() => executePrompt(qa.prompt)}
+              disabled={isLoading}
+              className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/15 border border-white/10 text-white/80 hover:text-white transition-all whitespace-nowrap cursor-pointer disabled:opacity-50"
+            >
+              {qa.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Message Log */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
           {messages.map((m, idx) => (
             <div
               key={idx}
               className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {m.role === 'assistant' && (
-                <div className="w-6 h-6 rounded-md bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Bot className="w-3.5 h-3.5 text-blue-400" />
+                <div className="w-6 h-6 rounded-md bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0 mt-1">
+                  <Bot className="w-3.5 h-3.5 text-emerald-400" />
                 </div>
               )}
 
-              <div className={`max-w-[85%] space-y-2 p-3.5 rounded-xl ${
-                m.role === 'user' 
-                  ? 'bg-white/15 text-white border border-white/20' 
-                  : 'bg-white/5 text-white/90 border border-white/10'
-              }`}>
-                <div className="whitespace-pre-wrap leading-relaxed">
+              <div className={`space-y-2 max-w-[85%] ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
+                <div
+                  className={`p-3.5 rounded-xl leading-relaxed whitespace-pre-wrap ${
+                    m.role === 'user'
+                      ? 'bg-[#85D743]/15 border border-[#85D743]/30 text-white rounded-tr-none'
+                      : 'panel-surface border border-white/10 text-white/90 rounded-tl-none'
+                  }`}
+                >
                   {m.text}
                 </div>
 
+                {/* Secure Patch Display */}
                 {m.patch && (
-                  <div className="space-y-1 pt-2 border-t border-white/10">
-                    <div className="flex items-center justify-between text-[10px] font-mono text-emerald-400">
-                      <span>RECOMMENDED SECURE PATCH:</span>
+                  <div className="panel-surface p-3 rounded-xl border border-white/15 bg-black/60 text-left space-y-2">
+                    <div className="flex items-center justify-between text-[11px] pb-2 border-b border-white/10 text-emerald-400">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <Code2 className="w-3.5 h-3.5" />
+                        <span>SECURE CODE PATCH</span>
+                      </div>
                       <button
-                        onClick={() => handleCopyPatch(m.patch!)}
-                        className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                        onClick={() => handleCopyText(m.patch!, idx)}
+                        className="flex items-center gap-1 text-[10px] text-white/60 hover:text-white transition-colors cursor-pointer"
                       >
-                        {copiedPatch ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedPatch ? 'COPIED' : 'COPY'}</span>
+                        {copiedPatchIdx === idx ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedPatchIdx === idx ? 'COPIED' : 'COPY PATCH'}</span>
                       </button>
                     </div>
-                    <pre className="p-2.5 rounded bg-black/80 border border-emerald-500/20 font-mono text-[11px] text-emerald-300 overflow-x-auto whitespace-pre">
+
+                    <pre className="text-[11px] text-white/90 font-mono overflow-x-auto p-2 rounded bg-black/40 border border-white/5">
                       {m.patch}
                     </pre>
                   </div>
@@ -208,43 +327,72 @@ export const SecurityCopilotModal: React.FC<SecurityCopilotModalProps> = ({
               </div>
 
               {m.role === 'user' && (
-                <div className="w-6 h-6 rounded-md bg-white/20 border border-white/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <User className="w-3.5 h-3.5 text-white" />
+                <div className="w-6 h-6 rounded-md bg-[#85D743]/20 border border-[#85D743]/30 flex items-center justify-center flex-shrink-0 mt-1">
+                  <User className="w-3.5 h-3.5 text-[#85D743]" />
                 </div>
               )}
             </div>
           ))}
 
           {isLoading && (
-            <div className="flex gap-3 justify-start items-center text-[#9a9a9a] text-xs font-mono">
-              <div className="w-6 h-6 rounded-md bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-3.5 h-3.5 text-blue-400" />
+            <div className="flex gap-3 justify-start">
+              <div className="w-6 h-6 rounded-md bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0 mt-1">
+                <Bot className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                <span>Copilot is analyzing security context...</span>
+              <div className="panel-surface p-3 rounded-xl border border-white/10 text-white/60 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>Evaluating security context & generating guidance...</span>
+                <button
+                  onClick={handleStop}
+                  className="ml-2 text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer"
+                >
+                  <StopCircle className="w-3 h-3" />
+                  <span>STOP</span>
+                </button>
               </div>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input Bar */}
-        <div className="p-3 bg-black/60 border-t border-white/10 flex items-center gap-2">
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Ask about vulnerability impact, exploit mechanics, or fix steps..."
-            className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/15 text-xs font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-white/40"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={isLoading || !inputText.trim()}
-            className="btn-liquid-primary p-2 rounded-lg text-xs font-semibold flex items-center justify-center disabled:opacity-50 cursor-pointer"
+        <div className="p-3 border-t border-white/10 bg-black/40">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              executePrompt(inputText);
+            }}
+            className="flex items-center gap-2"
           >
-            <Send className="w-4 h-4 text-black" />
-          </button>
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={isLoading ? 'Generating response...' : 'Ask Copilot about vulnerability fixes, attack surface, or CWE details...'}
+              disabled={isLoading}
+              className="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-white/15 text-xs text-white placeholder:text-white/40 focus:border-[#85D743] outline-none"
+            />
+
+            {isLoading ? (
+              <button
+                type="button"
+                onClick={handleStop}
+                className="px-3 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 flex items-center gap-1.5 cursor-pointer text-xs"
+              >
+                <StopCircle className="w-4 h-4" />
+                <span>STOP</span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!inputText.trim()}
+                className="px-3 py-2 rounded-xl bg-[#85D743] hover:bg-[#74c435] text-black font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-40 transition-colors text-xs"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            )}
+          </form>
         </div>
       </div>
     </div>

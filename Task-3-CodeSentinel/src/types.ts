@@ -81,3 +81,47 @@ export interface AIAnalysisResponse {
   cveReferences?: string[];
   mitigationPriority: 'IMMEDIATE' | 'HIGH' | 'SCHEDULED';
 }
+
+export type AuditEventType = 
+  | 'SCAN_STARTED'
+  | 'SCAN_COMPLETED'
+  | 'SCAN_FAILED'
+  | 'FINDING_VIEWED'
+  | 'REPORT_GENERATED'
+  | 'REPORT_EXPORTED'
+  | 'CONFIG_CHANGED'
+  | 'AI_REQUEST'
+  | 'SOURCE_UPLOADED'
+  | 'SCAN_DELETED';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  eventType: AuditEventType;
+  description: string;
+  metadata?: Record<string, any>;
+  severity?: 'INFO' | 'WARNING' | 'CRITICAL' | 'SECURITY';
+}
+
+export type DiffStatus = 'NEW' | 'RESOLVED' | 'UNCHANGED' | 'REGRESSED';
+
+export interface ComparedFinding {
+  finding: Finding;
+  status: DiffStatus;
+  notes?: string;
+}
+
+export interface ScanComparisonResult {
+  baseScanId: string;
+  compareScanId: string;
+  baseProjectName: string;
+  compareProjectName: string;
+  baseScore: number | null;
+  compareScore: number | null;
+  scoreDelta: number;
+  newFindings: Finding[];
+  resolvedFindings: Finding[];
+  unchangedFindings: Finding[];
+  regressedFindings: Finding[];
+  totalDiffCount: number;
+}

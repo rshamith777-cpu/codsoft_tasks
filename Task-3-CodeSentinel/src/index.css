@@ -39,6 +39,19 @@
   animation: marquee 10s linear infinite;
 }
 
+/* High-definition, hardware-accelerated sharp video rendering */
+.video-sharp-smooth {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: opacity, transform;
+  filter: contrast(1.08) saturate(1.12) brightness(0.98);
+}
+
 @layer base {
   :root {
     --bg: #020617;
