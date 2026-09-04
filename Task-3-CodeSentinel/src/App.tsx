@@ -260,36 +260,36 @@ export function App() {
             {/* Persistent Enterprise Sidebar */}
             <aside
               style={{
-                backgroundColor: 'rgba(2, 6, 23, 0.75)',
-                backdropFilter: 'blur(16px)',
-                borderRight: '1px solid rgba(255, 255, 255, 0.08)'
+                backgroundColor: 'rgba(2, 6, 23, 0.82)',
+                backdropFilter: 'blur(20px)',
+                borderRight: '1px solid rgba(255, 255, 255, 0.10)'
               }}
-              className={`no-print fixed lg:static inset-y-0 left-0 z-30 w-60 flex flex-col justify-between py-4 px-3 transition-transform duration-300 lg:translate-x-0 ${
+              className={`no-print fixed lg:static inset-y-0 left-0 z-30 w-72 flex flex-col justify-between py-6 px-4 transition-transform duration-300 lg:translate-x-0 ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
               }`}
             >
               {/* Navigation Section */}
-              <div className="space-y-4 overflow-y-auto">
+              <div className="space-y-6 overflow-y-auto">
                 {/* Command Palette Trigger in Sidebar */}
                 <button
                   onClick={() => setCommandPaletteOpen(true)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-white/70 hover:text-white transition-all cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-sm font-mono text-white/80 hover:text-white transition-all cursor-pointer shadow-sm"
                 >
-                  <div className="flex items-center gap-2">
-                    <Search className="w-3.5 h-3.5 text-[#85D743]" />
+                  <div className="flex items-center gap-2.5">
+                    <Search className="w-4 h-4 text-[#85D743]" />
                     <span>Search / Jump</span>
                   </div>
-                  <kbd className="px-1 py-0.5 rounded bg-white/10 text-[9px] text-white/50 border border-white/10">
+                  <kbd className="px-2 py-0.5 rounded bg-white/10 text-[10px] font-mono text-white/60 border border-white/15">
                     ⌘K
                   </kbd>
                 </button>
 
                 {/* Categorized Nav Sections */}
-                <nav className="space-y-4">
+                <nav className="space-y-6">
                   {navSections.map((section, sIdx) => (
-                    <div key={sIdx} className="space-y-1">
+                    <div key={sIdx} className="space-y-2">
                       {section.title && (
-                        <div className="px-2.5 pt-2 pb-1 text-[9px] font-mono tracking-widest text-white/30 uppercase">
+                        <div className="px-3 pt-2 pb-1 font-press-start text-[8px] tracking-widest text-[#85D743]/70 uppercase">
                           {section.title}
                         </div>
                       )}
@@ -303,22 +303,22 @@ export function App() {
                             key={item.id}
                             id={`nav-tab-${item.id}`}
                             onClick={() => switchTab(item.id)}
-                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-mono tracking-tight transition-all cursor-pointer ${
+                            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                               isActive
-                                ? 'bg-[#85D743]/10 text-[#85D743] font-medium border border-[#85D743]/30 shadow-[0_0_10px_rgba(133,215,67,0.12)]'
-                                : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                                ? 'bg-[#85D743]/15 text-[#85D743] font-semibold border border-[#85D743]/40 shadow-[0_0_15px_rgba(133,215,67,0.18)]'
+                                : 'text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
                             }`}
                           >
-                            <div className="flex items-center gap-2 truncate">
-                              <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? 'text-[#85D743]' : 'text-white/40'}`} />
+                            <div className="flex items-center gap-3 truncate">
+                              <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-[#85D743]' : 'text-white/40'}`} />
                               <span className="truncate">{item.label}</span>
                             </div>
 
                             {item.badge && (
-                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono flex-shrink-0 ${
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-press-start flex-shrink-0 ${
                                 isActive 
-                                  ? 'bg-[#85D743]/20 text-[#85D743] font-semibold border border-[#85D743]/30' 
-                                  : 'bg-white/5 text-white/40'
+                                  ? 'bg-[#85D743]/20 text-[#85D743] font-semibold border border-[#85D743]/40' 
+                                  : 'bg-white/5 text-white/50'
                               }`}>
                                 {item.badge}
                               </span>
@@ -332,30 +332,30 @@ export function App() {
               </div>
 
               {/* Sidebar Footer */}
-              <div className="pt-3 border-t border-white/10 space-y-2">
+              <div className="pt-4 border-t border-white/10 space-y-3">
                 <button
                   onClick={() => {
                     setCopilotFinding(null);
                     setCopilotOpen(true);
                   }}
-                  className="w-full py-2 px-3 rounded-lg text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-between transition-colors cursor-pointer"
+                  className="w-full py-3 px-4 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 flex items-center justify-between transition-all cursor-pointer shadow-md"
                 >
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>COPILOT CHAT</span>
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <span>SECURITY COPILOT</span>
                   </div>
-                  <ArrowRight className="w-3 h-3 text-emerald-400/50" />
+                  <ArrowRight className="w-3.5 h-3.5 text-emerald-400/60" />
                 </button>
 
-                <div className="text-[10px] font-mono text-white/30 px-1 flex items-center justify-between">
+                <div className="text-[11px] font-mono text-white/40 px-2 flex items-center justify-between">
                   <span>CodeSentinel AST</span>
-                  <span className="text-emerald-400">v2.4</span>
+                  <span className="text-[#85D743] font-press-start text-[8px]">v2.4</span>
                 </div>
               </div>
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full overflow-y-auto min-h-[calc(100vh-3.5rem)]">
+            <main className="flex-1 p-6 sm:p-10 lg:p-12 max-w-[1680px] mx-auto w-full overflow-y-auto min-h-[calc(100vh-3.5rem)]">
               {activeTab === 'overview' && (
                 <OverviewView
                   currentScan={currentScan}

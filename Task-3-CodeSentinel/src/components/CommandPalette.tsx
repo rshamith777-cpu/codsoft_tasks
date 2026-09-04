@@ -115,11 +115,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-black/75 backdrop-blur-sm select-none">
-      <div className="w-full max-w-xl rounded-2xl bg-[#09090b] border border-white/20 shadow-2xl overflow-hidden flex flex-col font-mono text-xs">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 sm:pt-32 px-4 bg-black/80 backdrop-blur-md select-none">
+      <div className="w-full max-w-3xl rounded-3xl bg-[#09090b]/95 border border-white/20 shadow-2xl overflow-hidden flex flex-col font-mono backdrop-blur-xl">
         {/* Search Input Bar */}
-        <div className="p-3.5 border-b border-white/10 flex items-center gap-3 bg-white/5">
-          <Search className="w-4 h-4 text-[#85D743] flex-shrink-0" />
+        <div className="p-5 sm:p-6 border-b border-white/10 flex items-center gap-3.5 bg-white/5">
+          <Search className="w-5 h-5 text-[#85D743] flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -130,17 +130,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             }}
             onKeyDown={handleKeyDownInInput}
             placeholder="Search commands, views, rules, or findings... (Esc to close)"
-            className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-white/40"
+            className="w-full bg-transparent border-none outline-none text-white text-sm sm:text-base placeholder:text-white/40"
           />
-          <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] text-white/50 border border-white/10">
+          <kbd className="px-2 py-1 rounded-lg bg-white/10 text-xs text-white/60 border border-white/10 font-mono">
             ESC
           </kbd>
         </div>
 
         {/* Results List */}
-        <div className="max-h-[340px] overflow-y-auto p-2 divide-y divide-white/5">
+        <div className="max-h-[440px] overflow-y-auto p-3 divide-y divide-white/5 space-y-1">
           {filteredItems.length === 0 ? (
-            <div className="p-6 text-center text-[#9a9a9a]">
+            <div className="p-8 text-center text-[#9a9a9a] text-sm">
               No matching commands or findings found for "{query}".
             </div>
           ) : (
@@ -153,16 +153,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   key={item.id}
                   onClick={item.action}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`px-3 py-2.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                  className={`px-4 sm:px-5 py-3.5 rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
                     isSelected ? 'bg-white/15 text-white font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-[#85D743]' : 'text-white/40'}`} />
-                    <span className="truncate">{item.title}</span>
+                  <div className="flex items-center gap-3.5 truncate">
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isSelected ? 'text-[#85D743]' : 'text-white/40'}`} />
+                    <span className="truncate text-sm sm:text-base">{item.title}</span>
                   </div>
 
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 flex-shrink-0 ml-2">
+                  <span className="text-xs px-2.5 py-1 rounded-lg bg-white/5 text-white/50 border border-white/5 flex-shrink-0 ml-3 font-mono">
                     {item.category}
                   </span>
                 </div>
@@ -172,13 +172,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Footer info */}
-        <div className="p-2.5 border-t border-white/10 bg-black/40 text-[10px] text-white/40 flex items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <span>↑↓ Navigate</span>
-            <span>↵ Select</span>
-            <span>Esc Close</span>
+        <div className="p-3.5 sm:p-4 border-t border-white/10 bg-black/50 text-xs text-white/50 flex items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px]">↑↓</kbd> Navigate</span>
+            <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px]">↵</kbd> Select</span>
+            <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px]">Esc</kbd> Close</span>
           </div>
-          <span className="text-[#85D743]">CodeSentinel AppSec</span>
+          <span className="font-press-start text-[9px] text-[#85D743]">CODESENTINEL // APPSEC</span>
         </div>
       </div>
     </div>

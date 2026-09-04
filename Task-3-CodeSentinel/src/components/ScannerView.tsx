@@ -229,121 +229,123 @@ def query_user(username):
   };
 
   return (
-    <div className="space-y-8">
-      {/* Consistent Internal Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/10">
-        <div className="space-y-1">
-          <div className="text-xs font-mono tracking-wider text-[#9a9a9a] uppercase">02 / ASSESSMENT ENGINE</div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            SCAN <span className="font-serif-italic font-normal">SOURCE</span>
+    <div className="space-y-10">
+      {/* Consistent Spacious Internal Header */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-white/10">
+        <div className="space-y-2">
+          <div className="text-[10px] sm:text-[11px] font-press-start tracking-widest text-[#85D743] uppercase">
+            02 // ASSESSMENT ENGINE
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+            ASSESSMENT <span className="font-serif-italic font-normal">ENGINE</span>
           </h1>
-          <p className="text-sm text-[#9a9a9a]">
-            Submit source files, archives, or code snippets for AST security vulnerability assessment.
+          <p className="text-base sm:text-lg text-white/70 max-w-2xl leading-relaxed">
+            Submit repositories, source archives, or code snippets for AST security vulnerability analysis and CWE mapping.
           </p>
         </div>
 
-        <div className="flex items-center gap-6 text-xs font-mono">
-          <div className="text-right">
-            <div className="text-[#9a9a9a] text-[10px]">SCANNER STATE</div>
-            <div className="text-emerald-400 flex items-center justify-end gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+        <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-mono">
+          <div className="text-right p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">SCANNER STATE</div>
+            <div className="text-emerald-400 flex items-center justify-end gap-2 font-bold mt-0.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>{isScanning ? 'SCANNING' : 'READY'}</span>
             </div>
           </div>
-          <div className="text-right hidden sm:block">
-            <div className="text-[#9a9a9a] text-[10px]">SCAN PROFILE</div>
-            <div className="text-white/90">{scanProfile}</div>
+          <div className="text-right hidden sm:block p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">PROFILE</div>
+            <div className="text-white/90 font-bold mt-0.5">{scanProfile}</div>
           </div>
-          <div className="text-right">
-            <div className="text-[#9a9a9a] text-[10px]">ACTIVE RULES</div>
-            <div className="text-white/90">18 Signatures</div>
+          <div className="text-right p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">ACTIVE RULES</div>
+            <div className="text-white/90 font-bold mt-0.5">18 Signatures</div>
           </div>
         </div>
       </div>
 
-      {/* Input Mode Selector */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-b border-white/10 pb-4">
+      {/* Spacious Input Mode Selector */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 border-b border-white/10 pb-6">
         <button
           onClick={() => { setActiveMode('DEMO'); setErrorMessage(null); }}
-          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer ${
             activeMode === 'DEMO'
-              ? 'bg-white/10 border-white/30 text-white shadow-sm'
-              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+              ? 'bg-white/10 border-white/30 text-white shadow-md'
+              : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/8'
           }`}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <Terminal className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-mono font-bold">BENCHMARK DEMO</span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <Terminal className="w-5 h-5 text-amber-400" />
+            <span className="text-xs sm:text-sm font-mono font-bold">BENCHMARK DEMO</span>
           </div>
-          <p className="text-[11px] text-[#9a9a9a] leading-tight">
-            Vulnerable Bank microservice
+          <p className="text-xs text-white/60 leading-relaxed">
+            Apex Bank microservice
           </p>
         </button>
 
         <button
           onClick={() => { setActiveMode('ZIP'); setErrorMessage(null); }}
-          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer ${
             activeMode === 'ZIP'
-              ? 'bg-white/10 border-white/30 text-white shadow-sm'
-              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+              ? 'bg-white/10 border-white/30 text-white shadow-md'
+              : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/8'
           }`}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <FolderArchive className="w-4 h-4 text-blue-400" />
-            <span className="text-xs font-mono font-bold">UPLOAD PROJECT</span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <FolderArchive className="w-5 h-5 text-blue-400" />
+            <span className="text-xs sm:text-sm font-mono font-bold">UPLOAD PROJECT</span>
           </div>
-          <p className="text-[11px] text-[#9a9a9a] leading-tight">
+          <p className="text-xs text-white/60 leading-relaxed">
             ZIP archive extraction
           </p>
         </button>
 
         <button
           onClick={() => { setActiveMode('FILES'); setErrorMessage(null); }}
-          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer ${
             activeMode === 'FILES'
-              ? 'bg-white/10 border-white/30 text-white shadow-sm'
-              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+              ? 'bg-white/10 border-white/30 text-white shadow-md'
+              : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/8'
           }`}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <Upload className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-mono font-bold">UPLOAD FILE</span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <Upload className="w-5 h-5 text-emerald-400" />
+            <span className="text-xs sm:text-sm font-mono font-bold">UPLOAD FILE</span>
           </div>
-          <p className="text-[11px] text-[#9a9a9a] leading-tight">
+          <p className="text-xs text-white/60 leading-relaxed">
             Multi-file selection
           </p>
         </button>
 
         <button
           onClick={() => { setActiveMode('PASTE'); setErrorMessage(null); }}
-          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer ${
             activeMode === 'PASTE'
-              ? 'bg-white/10 border-white/30 text-white shadow-sm'
-              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+              ? 'bg-white/10 border-white/30 text-white shadow-md'
+              : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/8'
           }`}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <FileCode className="w-4 h-4 text-purple-400" />
-            <span className="text-xs font-mono font-bold">PASTE CODE</span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <FileCode className="w-5 h-5 text-purple-400" />
+            <span className="text-xs sm:text-sm font-mono font-bold">PASTE CODE</span>
           </div>
-          <p className="text-[11px] text-[#9a9a9a] leading-tight">
+          <p className="text-xs text-white/60 leading-relaxed">
             Direct snippet evaluation
           </p>
         </button>
 
         <button
           onClick={() => { setActiveMode('REPO'); setErrorMessage(null); }}
-          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer ${
             activeMode === 'REPO'
-              ? 'bg-white/10 border-white/30 text-white shadow-sm'
-              : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/8'
+              ? 'bg-white/10 border-white/30 text-white shadow-md'
+              : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:bg-white/8'
           }`}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <GitBranch className="w-4 h-4 text-white/40" />
-            <span className="text-xs font-mono font-bold text-white/70">REPOSITORY</span>
+          <div className="flex items-center gap-2.5 mb-2">
+            <GitBranch className="w-5 h-5 text-white/40" />
+            <span className="text-xs sm:text-sm font-mono font-bold text-white/70">REPOSITORY</span>
           </div>
-          <p className="text-[10px] text-amber-400/80 uppercase font-mono font-semibold">
+          <p className="text-[10px] text-amber-400/90 uppercase font-mono font-bold">
             COMING SOON
           </p>
         </button>
@@ -522,30 +524,30 @@ def query_user(username):
         </div>
 
         {/* Right Controls (1 col) */}
-        <div className="space-y-4">
-          <div className="panel-surface p-5 space-y-4">
-            <h3 className="text-xs font-mono font-semibold text-white/80 uppercase tracking-wider flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-white/60" />
+        <div className="space-y-6">
+          <div className="panel-surface p-7 sm:p-8 rounded-2xl space-y-6 border border-white/15 shadow-xl">
+            <h3 className="font-press-start text-[10px] text-[#85D743] uppercase tracking-wider flex items-center gap-2.5">
+              <Settings2 className="w-4 h-4 text-[#85D743]" />
               SCANNER CONTROLS
             </h3>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-4 text-sm">
               <div>
-                <label className="block font-mono text-[#9a9a9a] mb-1">PROJECT NAME</label>
+                <label className="block font-mono text-xs text-white/70 font-semibold mb-1.5 uppercase">PROJECT NAME</label>
                 <input
                   type="text"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white/40"
+                  className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-sm font-mono text-white focus:outline-none focus:border-[#85D743]/50 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-[#9a9a9a] mb-1">SCAN PROFILE</label>
+                <label className="block font-mono text-xs text-white/70 font-semibold mb-1.5 uppercase">SCAN PROFILE</label>
                 <select
                   value={scanProfile}
                   onChange={(e) => setScanProfile(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white/40"
+                  className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-sm font-mono text-white focus:outline-none focus:border-[#85D743]/50 transition-colors"
                 >
                   <option value="STANDARD">Standard AST & Regex Engine</option>
                   <option value="DEEP">Deep Full-Spectrum Analysis</option>
@@ -554,47 +556,47 @@ def query_user(username):
               </div>
 
               <div>
-                <label className="block font-mono text-[#9a9a9a] mb-1">EXCLUDED PATHS</label>
+                <label className="block font-mono text-xs text-white/70 font-semibold mb-1.5 uppercase">EXCLUDED PATHS</label>
                 <input
                   type="text"
                   value={excludedPaths}
                   onChange={(e) => setExcludedPaths(e.target.value)}
                   placeholder="node_modules, .git, tests"
-                  className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/15 text-xs font-mono text-white focus:outline-none focus:border-white/40"
+                  className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-sm font-mono text-white focus:outline-none focus:border-[#85D743]/50 transition-colors"
                 />
               </div>
             </div>
 
             {/* Scan Execution Button */}
-            <div className="pt-2">
+            <div className="pt-3">
               <button
                 id="execute-scan-btn"
                 onClick={handleExecuteScan}
                 disabled={isScanning}
-                className="btn-liquid-primary w-full py-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="btn-liquid-primary w-full py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 shadow-xl"
               >
                 {isScanning ? (
                   <>
-                    <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    <span>ANALYZING SOURCE...</span>
+                    <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <span className="font-press-start text-[10px]">ANALYZING SOURCE...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-black" />
+                    <Sparkles className="w-5 h-5 text-black" />
                     <span>RUN SECURITY ASSESSMENT</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
             </div>
 
             {isScanning && (
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-1 text-xs font-mono text-white/70">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-semibold text-white">{scanStage}</span>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/15 space-y-1.5 text-xs sm:text-sm font-mono text-white/80">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-bold text-white">{scanStage}</span>
                 </div>
-                <div className="text-[11px] text-[#9a9a9a]">Executing syntax tree validation on server</div>
+                <div className="text-xs text-[#9a9a9a]">Executing syntax tree validation on server</div>
               </div>
             )}
           </div>

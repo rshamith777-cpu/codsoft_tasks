@@ -53,36 +53,41 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
 
   if (!currentScan || !currentScan.files || currentScan.files.length === 0) {
     return (
-      <div className="space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/10">
-          <div className="space-y-1">
-            <div className="text-xs font-mono tracking-wider text-[#9a9a9a] uppercase">04 / SOURCE EXPLORER</div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              CODE <span className="font-serif-italic font-normal">ASSESSMENT</span>
+      <div className="space-y-10">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-white/10">
+          <div className="space-y-2">
+            <div className="text-[10px] sm:text-[11px] font-press-start tracking-widest text-[#85D743] uppercase">
+              04 // SOURCE EXPLORER
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+              SOURCE CODE <span className="font-serif-italic font-normal">EXPLORER</span>
             </h1>
-            <p className="text-sm text-[#9a9a9a]">
+            <p className="text-base sm:text-lg text-white/70 max-w-2xl leading-relaxed">
               Interactive source viewer linked directly to discovered vulnerability evidence.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono">
-            <div className="text-right">
-              <div className="text-[#9a9a9a] text-[10px]">ACTIVE FILE</div>
-              <div className="text-white/60">—</div>
+          <div className="flex items-center gap-6 text-xs sm:text-sm font-mono">
+            <div className="text-right p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">ACTIVE FILE</div>
+              <div className="text-white/60 font-semibold mt-0.5">—</div>
             </div>
-            <div className="text-right">
-              <div className="text-[#9a9a9a] text-[10px]">STATUS</div>
-              <div className="text-white/60">NO FILES LOADED</div>
+            <div className="text-right p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">STATUS</div>
+              <div className="text-white/60 font-semibold mt-0.5">NO FILES LOADED</div>
             </div>
           </div>
         </div>
 
-        <div className="panel-surface p-12 text-center flex flex-col items-center justify-center max-w-xl mx-auto my-12 border border-white/10">
-          <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
-            <FileCode className="w-6 h-6 text-white/40" />
+        <div className="panel-surface p-12 sm:p-16 text-center flex flex-col items-center justify-center max-w-2xl mx-auto my-12 border border-white/15 rounded-3xl shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-[#85D743]/10 border-2 border-[#85D743]/40 flex items-center justify-center mb-6 shadow-[0_0_25px_rgba(133,215,67,0.2)]">
+            <FileCode className="w-8 h-8 text-[#85D743]" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">NO CODE LOADED</h3>
-          <p className="text-sm text-[#9a9a9a] leading-relaxed">
+          <div className="font-press-start text-xs text-[#85D743] mb-3 uppercase tracking-wider">
+            STANDBY // NO CODE
+          </div>
+          <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-3">NO CODE LOADED</h3>
+          <p className="text-base text-white/70 max-w-lg mb-8 leading-relaxed">
             Run a security assessment or load the demo project to inspect vulnerable source files.
           </p>
         </div>
@@ -112,50 +117,52 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
   };
 
   return (
-    <div className="space-y-8">
-      {/* Consistent Internal Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/10">
-        <div className="space-y-1">
-          <div className="text-xs font-mono tracking-wider text-[#9a9a9a] uppercase">04 / SOURCE EXPLORER</div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            CODE <span className="font-serif-italic font-normal">ASSESSMENT</span>
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/10 text-white/70 border border-white/10">
+    <div className="space-y-10">
+      {/* Consistent Spacious Internal Header */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-white/10">
+        <div className="space-y-2">
+          <div className="text-[10px] sm:text-[11px] font-press-start tracking-widest text-[#85D743] uppercase">
+            04 // SOURCE EXPLORER
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white flex flex-wrap items-center gap-4">
+            SOURCE CODE <span className="font-serif-italic font-normal">EXPLORER</span>
+            <span className="font-press-start text-[9px] px-3.5 py-1 rounded-lg uppercase bg-white/10 text-white/90 border border-white/15">
               {currentScan.files.length} FILES
             </span>
           </h1>
-          <p className="text-sm text-[#9a9a9a]">
-            Line-by-line evidence inspection with contextual vulnerability annotations.
+          <p className="text-base sm:text-lg text-white/70 max-w-2xl leading-relaxed">
+            Line-by-line evidence inspection with contextual vulnerability annotations and synchronized finding markers.
           </p>
         </div>
 
-        <div className="flex items-center gap-6 text-xs font-mono">
-          <div className="text-right">
-            <div className="text-[#9a9a9a] text-[10px]">ACTIVE FILE</div>
-            <div className="text-white/90 truncate max-w-[160px]">{activeFile.path}</div>
+        <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-mono">
+          <div className="text-right p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">ACTIVE FILE</div>
+            <div className="text-white/90 font-bold truncate max-w-[200px] mt-0.5">{activeFile.path}</div>
           </div>
-          <div className="text-right hidden sm:block">
-            <div className="text-[#9a9a9a] text-[10px]">LINE COUNT</div>
-            <div className="text-white/90">{fileLines.length} LOC</div>
+          <div className="text-right hidden sm:block p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">LINE COUNT</div>
+            <div className="text-white/90 font-bold mt-0.5">{fileLines.length} LOC</div>
           </div>
-          <div className="text-right">
-            <div className="text-[#9a9a9a] text-[10px]">FILE WEAKNESSES</div>
-            <div className={fileFindings.length > 0 ? 'text-rose-400 font-bold' : 'text-emerald-400'}>
+          <div className="text-right p-3 sm:p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[#9a9a9a] text-[10px] uppercase font-bold tracking-wider">FILE WEAKNESSES</div>
+            <div className={`font-bold mt-0.5 ${fileFindings.length > 0 ? 'text-rose-400 font-extrabold' : 'text-emerald-400'}`}>
               {fileFindings.length} Detected
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3-Column IDE Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start min-h-[620px]">
+      {/* 3-Column Spacious IDE Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start min-h-[720px]">
         {/* Left: File List (3 cols) */}
-        <div className="lg:col-span-3 panel-surface p-3 space-y-3 h-full max-h-[680px] overflow-y-auto">
-          <div className="text-[11px] font-mono text-[#9a9a9a] uppercase tracking-wider px-2 py-1 flex items-center justify-between border-b border-white/5 pb-2">
+        <div className="lg:col-span-3 panel-surface p-5 space-y-4 h-full max-h-[800px] overflow-y-auto rounded-2xl border border-white/15 shadow-xl">
+          <div className="font-press-start text-[9px] text-[#85D743] uppercase tracking-wider px-2 py-1 flex items-center justify-between border-b border-white/10 pb-3">
             <span>EXPLORER TREE</span>
             <span>{currentScan.files.length}</span>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {currentScan.files.map((file) => {
               const isSelected = file.path === activeFile.path;
               const hasFindings = file.findingsCount > 0;
@@ -167,19 +174,19 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
                     setSelectedFilePath(file.path);
                     setSelectedLineNumber(null);
                   }}
-                  className={`w-full p-2 rounded-lg text-left text-xs font-mono flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                  className={`w-full p-3 rounded-xl text-left text-xs sm:text-sm font-mono flex items-center justify-between gap-3 transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-white/15 text-white font-medium border border-white/20'
+                      ? 'bg-white/15 text-white font-bold border border-white/30 shadow-md'
                       : 'text-white/70 hover:bg-white/5 hover:text-white border border-transparent'
                   }`}
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <FileCode className="w-3.5 h-3.5 flex-shrink-0 text-white/50" />
+                  <div className="flex items-center gap-2.5 truncate">
+                    <FileCode className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-[#85D743]' : 'text-white/50'}`} />
                     <span className="truncate">{file.path}</span>
                   </div>
 
                   {hasFindings && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex-shrink-0">
+                    <span className="px-2 py-0.5 rounded text-[8px] font-press-start bg-rose-500/20 text-rose-300 border border-rose-500/40 flex-shrink-0">
                       {file.findingsCount}
                     </span>
                   )}
@@ -190,28 +197,28 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
         </div>
 
         {/* Center: Source Code Viewer (6 cols) */}
-        <div className="lg:col-span-6 panel-surface overflow-hidden flex flex-col h-full max-h-[680px]">
+        <div className="lg:col-span-6 panel-surface overflow-hidden flex flex-col h-full max-h-[800px] rounded-2xl border border-white/15 shadow-2xl">
           {/* File Top Bar */}
-          <div className="px-4 py-2.5 bg-black/60 border-b border-white/10 flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center gap-2 text-white/80 font-medium truncate">
-              <Code2 className="w-4 h-4 text-white/50 flex-shrink-0" />
+          <div className="px-6 py-4 bg-black/60 border-b border-white/10 flex items-center justify-between text-xs sm:text-sm font-mono">
+            <div className="flex items-center gap-3 text-white/90 font-bold truncate">
+              <Code2 className="w-5 h-5 text-[#85D743] flex-shrink-0" />
               <span className="text-white truncate">{activeFile.path}</span>
-              <span className="text-[#9a9a9a] text-[11px]">({activeFile.lines} lines)</span>
+              <span className="text-white/50 text-xs font-normal">({activeFile.lines} lines)</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleCopyFile}
-                className="text-[11px] font-mono text-white/50 hover:text-white flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-white/10 cursor-pointer"
+                className="text-xs font-mono text-white/70 hover:text-white flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer shadow-sm"
               >
-                {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                <span>{copiedCode ? 'COPIED' : 'COPY'}</span>
+                {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedCode ? 'COPIED' : 'COPY FILE'}</span>
               </button>
             </div>
           </div>
 
           {/* Line Gutter & Code */}
-          <div ref={codeContainerRef} className="flex-1 overflow-y-auto bg-black/80 p-3 font-mono text-xs select-text">
+          <div ref={codeContainerRef} className="flex-1 overflow-y-auto bg-black/85 p-6 font-mono text-sm leading-relaxed select-text">
             {fileLines.map((lineText, idx) => {
               const lineNum = idx + 1;
               const findingOnLine = lineFindingMap.get(lineNum);
@@ -219,11 +226,11 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
 
               let lineBg = 'hover:bg-white/5';
               if (isSelectedLine) {
-                lineBg = 'bg-white/15 border-l-2 border-white';
+                lineBg = 'bg-white/20 border-l-4 border-white';
               } else if (findingOnLine) {
                 lineBg = findingOnLine.severity === 'CRITICAL'
-                  ? 'bg-rose-950/30 border-l-2 border-rose-500'
-                  : 'bg-amber-950/30 border-l-2 border-amber-500';
+                  ? 'bg-rose-950/40 border-l-4 border-rose-500'
+                  : 'bg-amber-950/40 border-l-4 border-amber-500';
               }
 
               return (
@@ -235,29 +242,29 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
                       setSelectedLineNumber(lineNum);
                     }
                   }}
-                  className={`flex items-start py-0.5 px-2 rounded transition-colors group ${lineBg} ${
+                  className={`flex items-start py-1 px-3 rounded transition-colors group ${lineBg} ${
                     findingOnLine ? 'cursor-pointer' : ''
                   }`}
                 >
-                  <span className="w-10 flex-shrink-0 text-right pr-4 text-white/30 select-none group-hover:text-white/60">
+                  <span className="w-12 flex-shrink-0 text-right pr-5 text-white/40 select-none group-hover:text-white/80 font-mono text-xs sm:text-sm">
                     {lineNum}
                   </span>
 
                   {findingOnLine ? (
                     <span 
-                      className={`w-2.5 h-2.5 rounded-full mr-2 self-center flex-shrink-0 ${
-                        findingOnLine.severity === 'CRITICAL' ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'
+                      className={`w-3 h-3 rounded-full mr-3 self-center flex-shrink-0 ${
+                        findingOnLine.severity === 'CRITICAL' ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-amber-500'
                       }`} 
                       title={`${findingOnLine.severity}: ${findingOnLine.title}`}
                     />
                   ) : (
-                    <span className="w-2.5 mr-2 flex-shrink-0" />
+                    <span className="w-3 mr-3 flex-shrink-0" />
                   )}
 
                   <span className={`whitespace-pre overflow-x-auto flex-1 ${
                     findingOnLine 
-                      ? 'text-rose-300 font-semibold' 
-                      : 'text-white/80'
+                      ? 'text-rose-300 font-bold' 
+                      : 'text-white/90'
                   }`}>
                     {lineText || ' '}
                   </span>
@@ -268,12 +275,12 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
         </div>
 
         {/* Right: Vulnerability Inspector Panel (3 cols) */}
-        <div className="lg:col-span-3 panel-surface p-4 space-y-4 h-full max-h-[680px] overflow-y-auto">
-          <div className="text-[11px] font-mono text-[#9a9a9a] uppercase tracking-wider border-b border-white/5 pb-2 flex items-center justify-between">
+        <div className="lg:col-span-3 panel-surface p-6 sm:p-7 space-y-6 h-full max-h-[800px] overflow-y-auto rounded-2xl border border-white/15 shadow-xl">
+          <div className="font-press-start text-[9px] text-[#85D743] uppercase tracking-wider border-b border-white/10 pb-3 flex items-center justify-between">
             <span>INSPECTION PANEL</span>
             {activeFinding && (
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                activeFinding.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
+              <span className={`px-2.5 py-0.5 rounded text-[8px] font-press-start ${
+                activeFinding.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
               }`}>
                 {activeFinding.severity}
               </span>
@@ -281,32 +288,32 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
           </div>
 
           {activeFinding ? (
-            <div className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <div className="text-[#9a9a9a] font-mono text-[10px]">{activeFinding.cwe} • RULE {activeFinding.ruleId}</div>
-                <h4 className="font-semibold text-white text-sm leading-snug">{activeFinding.title}</h4>
-                <div className="text-white/60 font-mono text-[11px]">
+            <div className="space-y-5 text-sm">
+              <div className="space-y-2">
+                <div className="text-[#85D743] font-mono text-xs font-bold">{activeFinding.cwe} • RULE {activeFinding.ruleId}</div>
+                <h4 className="font-bold text-white text-base sm:text-lg leading-snug">{activeFinding.title}</h4>
+                <div className="text-white/60 font-mono text-xs">
                   {activeFinding.file}:{activeFinding.line}
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <div className="text-[#9a9a9a] font-mono text-[10px] uppercase">EVIDENCE</div>
-                <pre className="p-2.5 rounded bg-black/60 border border-white/10 font-mono text-xs text-rose-300 whitespace-pre-wrap break-all">
+              <div className="space-y-2">
+                <div className="text-[#9a9a9a] font-mono text-xs uppercase font-bold">EVIDENCE CODE</div>
+                <pre className="p-3.5 rounded-xl bg-black/80 border border-white/15 font-mono text-xs sm:text-sm text-rose-300 whitespace-pre-wrap break-all shadow-inner">
                   {activeFinding.evidence}
                 </pre>
               </div>
 
-              <div className="space-y-1">
-                <div className="text-[#9a9a9a] font-mono text-[10px] uppercase">DESCRIPTION</div>
-                <p className="text-[#9a9a9a] font-sans text-xs leading-relaxed">
+              <div className="space-y-2">
+                <div className="text-[#9a9a9a] font-mono text-xs uppercase font-bold">DESCRIPTION</div>
+                <p className="text-white/70 font-sans text-xs sm:text-sm leading-relaxed">
                   {activeFinding.description}
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <div className="text-emerald-400 font-mono text-[10px] uppercase">REMEDIATION</div>
-                <p className="text-[#9a9a9a] font-sans text-xs leading-relaxed">
+              <div className="space-y-2">
+                <div className="text-emerald-400 font-mono text-xs uppercase font-bold">REMEDIATION</div>
+                <p className="text-white/70 font-sans text-xs sm:text-sm leading-relaxed">
                   {activeFinding.remediation}
                 </p>
               </div>
@@ -314,16 +321,16 @@ export const CodeExplorerView: React.FC<CodeExplorerViewProps> = ({
               {/* Copilot trigger */}
               <button
                 onClick={() => onOpenCopilotWithFinding(activeFinding)}
-                className="btn-liquid-primary w-full py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                className="btn-liquid-primary w-full py-3.5 rounded-xl text-xs sm:text-sm font-mono font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg mt-4"
               >
-                <Sparkles className="w-3.5 h-3.5 text-black" />
+                <Sparkles className="w-4 h-4 text-black" />
                 <span>COPILOT REMEDIATION</span>
               </button>
             </div>
           ) : (
-            <div className="text-center py-8 text-[#9a9a9a] font-mono text-xs space-y-2">
-              <Check className="w-8 h-8 text-emerald-400/50 mx-auto" />
-              <div>No vulnerabilities detected in this file.</div>
+            <div className="text-center py-12 text-[#9a9a9a] font-mono text-sm space-y-3">
+              <Check className="w-10 h-10 text-emerald-400/60 mx-auto" />
+              <div>No vulnerabilities detected on this line or file.</div>
             </div>
           )}
         </div>

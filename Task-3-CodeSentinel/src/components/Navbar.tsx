@@ -21,15 +21,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCopilot
 }) => {
   return (
-    <header className="h-14 border-b border-white/10 bg-black/50 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between z-30 sticky top-0">
+    <header className="h-16 border-b border-white/10 bg-black/60 backdrop-blur-2xl px-6 sm:px-8 flex items-center justify-between z-30 sticky top-0">
       {/* Left: CodeSentinel Logo & Workspace Breadcrumb */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-5">
         <button
           onClick={onReturnToLanding}
-          className="flex items-center gap-2.5 group text-white/90 hover:text-white transition-colors cursor-pointer"
+          className="flex items-center gap-3 group text-white/90 hover:text-white transition-colors cursor-pointer"
           title="Return to Home"
         >
-          <div className="w-8 h-8 rounded-lg overflow-hidden border-2 border-[#85D743] shadow-[2px_2px_0px_#0033FF] flex items-center justify-center group-hover:scale-105 transition-all bg-black">
+          <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-[#85D743] shadow-[2px_2px_0px_#0033FF] flex items-center justify-center group-hover:scale-105 transition-all bg-black">
             <img 
               src={cyberShieldSticker} 
               alt="CodeSentinel Shield" 
@@ -38,47 +38,43 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
           </div>
           <div className="flex flex-col text-left">
-            <span className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5 font-press-start text-[10px] text-[#85D743]">
+            <span className="font-bold tracking-tight text-white flex items-center gap-2 font-press-start text-[11px] text-[#85D743]">
               CodeSentinel
             </span>
-            <span className="text-[9px] font-mono text-white/50 tracking-wider">SECURITY SAST</span>
+            <span className="text-[10px] font-mono text-white/50 tracking-wider">SECURITY SAST</span>
           </div>
         </button>
 
-        <div className="h-4 w-[1px] bg-white/15 hidden sm:block" />
+        <div className="h-5 w-[1px] bg-white/15 hidden sm:block" />
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-[#9a9a9a]">
-          <span>SECURITY WORKSTATION</span>
+        <div className="hidden sm:flex items-center gap-2.5 text-xs font-mono text-white/70">
+          <span className="text-white/40 font-semibold">WORKSPACE /</span>
           {currentScan ? (
             <>
-              <span className="text-white/30">/</span>
-              <span className="text-white font-medium truncate max-w-[200px]">
+              <span className="text-white font-medium truncate max-w-[280px]">
                 {currentScan.projectName}
               </span>
               {currentScan.isDemo && (
-                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  DEMO MODE
+                <span className="px-2.5 py-0.5 rounded text-[9px] font-press-start bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  DEMO
                 </span>
               )}
             </>
           ) : (
-            <>
-              <span className="text-white/30">/</span>
-              <span className="text-white/40">NO PROJECT LOADED</span>
-            </>
+            <span className="text-white/40">NO PROJECT LOADED</span>
           )}
         </div>
       </div>
 
       {/* Right: Security Copilot, Demo trigger, Scanner status */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3.5">
         {/* Security Copilot Button */}
         <button
           id="nav-copilot-trigger-btn"
           onClick={onOpenCopilot}
-          className="btn-liquid-secondary px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 cursor-pointer"
+          className="btn-liquid-secondary px-4 py-2 rounded-xl text-xs font-mono font-semibold flex items-center gap-2 cursor-pointer shadow-sm"
         >
-          <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+          <Sparkles className="w-4 h-4 text-blue-400" />
           <span className="hidden sm:inline">SECURITY COPILOT</span>
           <span className="sm:hidden">COPILOT</span>
         </button>
@@ -87,26 +83,26 @@ export const Navbar: React.FC<NavbarProps> = ({
         {!currentScan && (
           <button
             onClick={onLoadDemo}
-            className="btn-liquid-secondary px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 cursor-pointer"
+            className="btn-liquid-secondary px-4 py-2 rounded-xl text-xs font-mono font-semibold flex items-center gap-2 cursor-pointer shadow-sm"
           >
-            <Terminal className="w-3.5 h-3.5 text-amber-400" />
+            <Terminal className="w-4 h-4 text-amber-400" />
             <span className="hidden md:inline">LOAD DEMO</span>
           </button>
         )}
 
         {/* Engine status */}
-        <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[11px] font-mono text-white/70">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/15 text-xs font-mono text-white/80">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="hidden md:inline">READY</span>
+          <span className="hidden md:inline font-semibold">READY</span>
         </div>
 
         {/* Return Button */}
         <button
           onClick={onReturnToLanding}
-          className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           title="Return to Home"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
       </div>
     </header>
